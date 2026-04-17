@@ -1,0 +1,32 @@
+[
+  {
+    "supplierName": "Matwerkz Technologies (Suzhou) Co.,Ltd",
+    "beneficiaryName": "Matwerkz Technologies (Suzhou) Co.,Ltd",
+    "bankSwiftCode": "ICBKCNBJSZU",
+    "beneficiaryAccountNumber": "1102020309001065145",
+    "paymentReference": "",
+    "normalizedSupplierKey": "MATWERKZ TECHNOLOGIES (SUZHOU) CO.,LTD",
+    "createdAt": "2026-04-17T09:33:54.508Z",
+    "updatedAt": "2026-04-17T09:33:54.508Z"
+  },
+  {
+    "supplierName": "Jiangxi Suoruida Intelligent Equipment Technology Co., Ltd.",
+    "beneficiaryName": "JIANGXI SUORUIDA INTELLIGENT EQUIPMENT TECHNOLOGY CO., LTD",
+    "bankSwiftCode": "PCBCCNBJJXX",
+    "beneficiaryAccountNumber": "36050181065000001448",
+    "paymentReference": "",
+    "normalizedSupplierKey": "JIANGXI SUORUIDA INTELLIGENT EQUIPMENT TECHNOLOGY CO., LTD.",
+    "createdAt": "2026-04-17T09:34:28.592Z",
+    "updatedAt": "2026-04-17T09:34:28.592Z"
+  },
+  {
+    "supplierName": "MAHA CHEMICALS (ASIA) PTE LTD",
+    "beneficiaryName": "MAHA CHEMICALS (ASIA) PTE LTD",
+    "bankSwiftCode": "UOVBSGSG",
+    "beneficiaryAccountNumber": "130-301-926-5",
+    "paymentReference": "",
+    "normalizedSupplierKey": "MAHA CHEMICALS (ASIA) PTE LTD",
+    "createdAt": "2026-04-17T09:35:07.358Z",
+    "updatedAt": "2026-04-17T09:35:07.358Z"
+  }
+]

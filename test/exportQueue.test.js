@@ -1,6 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { exportQueuedPayments } = require("../lib/exportQueue");
+const {
+  buildConfirmedPaymentExportFileName,
+  exportQueuedPayments,
+  formatExportDatePart,
+  formatExportTimePart,
+} = require("../lib/exportQueue");
 
 test("exportQueuedPayments rejects empty confirmed queue", () => {
   const result = exportQueuedPayments([]);
@@ -41,6 +46,7 @@ test("exportQueuedPayments rejects queue when any confirmed record is invalid", 
 });
 
 test("exportQueuedPayments exports one header and one row per confirmed payment", () => {
+  const now = new Date("2026-04-17T14:30:00");
   const result = exportQueuedPayments([
     {
       corrected: {
@@ -50,6 +56,7 @@ test("exportQueuedPayments exports one header and one row per confirmed payment"
         bankSwiftCode: "DBSSSGSGXXX",
         beneficiaryAccountNumber: "153981779",
         remark: "INV-2002",
+        currency: "usd",
       },
     },
     {
@@ -60,16 +67,24 @@ test("exportQueuedPayments exports one header and one row per confirmed payment"
         bankSwiftCode: "OCBCSGSGXXX",
         beneficiaryAccountNumber: "609029475001",
         remark: "INV-2003",
+        currency: "USD",
       },
     },
-  ]);
+  ], { now });
 
   assert.equal(result.ok, true);
   assert.equal(result.status, 200);
-  assert.equal(result.fileName, "bank-payments.txt");
+  assert.equal(result.fileName, "USD_17042026_1430_2.txt");
 
   const lines = result.fileContent.split(/\r\n/);
   assert.equal(lines.length, 4);
   assert.equal(lines[1].slice(240, 248), "INV-2002");
   assert.equal(lines[2].slice(240, 248), "INV-2003");
+});
+
+test("confirmed payment export filename helpers format date, time, and count", () => {
+  const now = new Date("2026-04-17T09:45:00");
+  assert.equal(formatExportDatePart(now), "17042026");
+  assert.equal(formatExportTimePart(now), "0945");
+  assert.equal(buildConfirmedPaymentExportFileName("rmb", 3, now), "RMB_17042026_0945_3.txt");
 });

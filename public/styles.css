@@ -35,6 +35,13 @@ body {
   gap: 22px;
 }
 
+.top-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
 .hero,
 .panel {
   background: rgba(255, 250, 242, 0.88);
@@ -44,7 +51,8 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.hero {
+.hero,
+.top-card {
   padding: 32px;
 }
 
@@ -79,7 +87,9 @@ h2 {
 }
 
 .evidence-card,
-.preview-card {
+.preview-card,
+.supplier-review-card,
+.supplier-master-card {
   margin-top: 22px;
   border: 1px solid var(--line);
   background: #fdf8ef;
@@ -312,6 +322,56 @@ button.ghost {
   margin-top: 18px;
 }
 
+.supplier-review-header h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.supplier-review-message {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.supplier-review-grid {
+  margin-top: 16px;
+}
+
+.supplier-master-card {
+  margin-top: 0;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: stretch;
+  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.supplier-master-summary {
+  margin: 0;
+  color: var(--muted);
+  max-width: 56ch;
+  line-height: 1.5;
+}
+
+.supplier-master-actions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.supplier-master-upload {
+  gap: 10px;
+}
+
+.supplier-master-upload-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.supplier-master-status {
+  margin-top: auto;
+}
+
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -373,7 +433,12 @@ button:disabled {
     margin-top: 20px;
   }
 
+  .top-row {
+    grid-template-columns: 1fr;
+  }
+
   .hero,
+  .top-card,
   .panel {
     padding: 18px;
   }
@@ -381,5 +446,4 @@ button:disabled {
   h1 {
     max-width: none;
   }
-
 }

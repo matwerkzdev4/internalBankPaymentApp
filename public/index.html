@@ -8,21 +8,44 @@
   </head>
   <body>
     <main class="shell">
-      <section class="hero">
-        <p class="eyebrow">Internal Finance Tool</p>
-        <h1>Bank Payment Extraction Tool</h1>
-        <p class="lede">
-          This tool reads invoice and supporting documents, pulls out the payment details it can
-          find, lets you correct the rest, and holds confirmed payments in a list until you export
-          the full bank payment text file.
-        </p>
+      <section class="top-row">
+        <section class="hero top-card">
+          <p class="eyebrow">Internal Finance Tool</p>
+          <h1>Bank Payment Extraction Tool</h1>
+          <p class="lede">
+            This tool reads invoice and supporting documents, pulls out the payment details it can
+            find, lets you correct the rest, and holds confirmed payments in a list until you export
+            the full bank payment text file.
+          </p>
+        </section>
+
+        <section class="supplier-master-card top-card">
+          <div class="supplier-master-copy">
+            <p class="label">Supplier Master</p>
+            <p id="supplierMasterSummary" class="supplier-master-summary">
+              No supplier profiles are saved on this device yet. Importing an existing supplier master JSON file will replace this local list.
+            </p>
+          </div>
+
+          <div class="supplier-master-actions">
+            <label class="native-file-input supplier-master-upload">
+              <span class="supplier-master-upload-label">Import supplier master JSON file (replaces this device's local list)</span>
+              <input id="supplierMasterFileInput" type="file" accept=".json,application/json" />
+            </label>
+            <button id="exportSupplierMasterButton" class="ghost" type="button">Export supplier master list</button>
+          </div>
+
+          <div id="supplierMasterStatus" class="status-banner muted supplier-master-status">
+            Supplier master actions will be shown here.
+          </div>
+        </section>
       </section>
 
       <section class="panel">
         <div class="stage">
           <span class="stage-number">1</span>
           <div>
-            <h2>Upload documents</h2>
+            <h2>Upload Documents</h2>
           <p>Choose up to 5 documents for the payment currently under review. Larger mixed batches may slow extraction.</p>
           </div>
         </div>
@@ -50,7 +73,7 @@
         <div class="stage">
           <span class="stage-number">2</span>
           <div>
-            <h2>Review extracted details</h2>
+            <h2>Review Extracted Details</h2>
             <p>Missing required fields are highlighted. Fill them in before confirming this payment.</p>
           </div>
         </div>
@@ -108,6 +131,47 @@
 
         <div id="missingFields" class="missing-fields"></div>
 
+        <section id="supplierReviewPanel" class="supplier-review-card hidden">
+          <div class="supplier-review-header">
+            <div>
+              <p class="label">Supplier Review</p>
+              <h3 id="supplierReviewTitle">Review and save this supplier</h3>
+              <p id="supplierReviewMessage" class="supplier-review-message">
+                Confirm the supplier profile before you continue.
+              </p>
+            </div>
+          </div>
+
+          <form id="supplierReviewForm" class="review-grid supplier-review-grid">
+            <label>
+              Supplier name
+              <input name="supplierName" />
+            </label>
+            <label>
+              Beneficiary name
+              <input name="beneficiaryName" />
+            </label>
+            <label>
+              Beneficiary bank identifier / SWIFT
+              <input name="bankSwiftCode" />
+            </label>
+            <label>
+              Beneficiary account number
+              <input name="beneficiaryAccountNumber" />
+            </label>
+            <label>
+              Default payment reference
+              <input name="paymentReference" />
+            </label>
+          </form>
+
+          <div id="supplierReviewMissingFields" class="missing-fields"></div>
+
+          <div class="actions review-actions">
+            <button id="saveSupplierButton" class="primary" type="button">Save supplier profile</button>
+          </div>
+        </section>
+
         <div class="preview-card">
           <p class="label">Current transaction row preview</p>
           <pre id="rowPreview">No payment row yet</pre>
@@ -123,7 +187,7 @@
         <div class="stage">
           <span class="stage-number">3</span>
           <div>
-            <h2>Confirmed payment list</h2>
+            <h2>Confirmed Payment List</h2>
             <p>Confirmed payments stay in this browser session and are grouped by currency for export.</p>
           </div>
         </div>
@@ -131,6 +195,21 @@
         <div class="queue-card">
           <p id="queueSummary" class="label">No confirmed payments yet</p>
           <div id="queueList" class="queue-list"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="stage">
+          <span class="stage-number">4</span>
+          <div>
+            <h2>New Supplier/Payee List</h2>
+            <p>New suppliers created in this session are grouped by currency to support payee setup in the bank application.</p>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <p id="payeeSummary" class="label">No new supplier/payee items yet</p>
+          <div id="payeeList" class="queue-list"></div>
         </div>
       </section>
 

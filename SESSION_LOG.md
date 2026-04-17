@@ -1,5 +1,31 @@
 # Session Log
 
+## 2026-04-17
+
+- Added stricter supplier-profile validation so new suppliers cannot be saved without supplier name, SWIFT, and account number.
+- Added a session-based `New Supplier/Payee List` below the confirmed payment list, grouped by currency and deduplicated by supplier per currency.
+- Added `.txt` export for the new supplier/payee list by currency and a confirmed-payment export reminder when session-new payees exist.
+- Updated demo text and layout details, including header capitalization, queue wording, supplier review wording, and supplier summary copy.
+- Verified the automated suite passed with 72 tests.
+
+## 2026-04-17
+
+- Implemented a local backend supplier master list with supplier review before payment confirmation.
+- Added supplier master export/import so users can move the local supplier list between devices by JSON file replacement.
+- Added supplier master filename metadata and confirmed payment filename metadata in the export flow.
+- Moved the supplier master UI to the top of the page, reordered it to import first then export, and localized supplier import/export status messages inside that card.
+- Hardened the confirmed payment export download path and verified the automated suite passed with 60 tests.
+
+## 2026-04-17
+
+- Simplified the upload UI to the native file picker only and removed drag-and-drop plus the old gallery-style preview path.
+- Restored visible multi-file upload feedback with a simple selected-files list under the upload section.
+- Extended the selected-files list into a pre-extraction upload queue that supports multiple picker cycles, duplicate-ignore behavior, per-file removal, and clear-all.
+- Kept extraction evidence in the shorter 5-line demo-safe format.
+- Added server-backed confirmed-payment queue persistence and matching test coverage.
+- Agreed the next product direction should add a persistent supplier master list with a new-supplier review step before the usual payment confirmation flow.
+- Verified the automated suite passed after the latest upload and queue changes.
+
 ## 2026-04-16
 
 - Added upload-format validation, `.docx` parsing, common image-format support, and a 5-file upload cap.

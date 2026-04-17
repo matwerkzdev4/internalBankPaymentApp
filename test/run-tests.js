@@ -1,7 +1,9 @@
 require("./bankFile.test");
 require("./appUi.test");
 require("./confirmedQueueStore.test");
+require("./supplierStore.test");
 require("./confirmedQueue.test");
 require("./extraction.test");
 require("./exportQueue.test");
+require("./server.test");
 require("./realDocument.test");

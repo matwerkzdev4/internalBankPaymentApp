@@ -7,6 +7,13 @@ const {
   writeConfirmedQueue,
 } = require("./lib/confirmedQueueStore");
 const {
+  normalizeSupplierImportRecords,
+  readSuppliers,
+  replaceSuppliers,
+  resolveSupplierMatch,
+  saveSupplier,
+} = require("./lib/supplierStore");
+const {
   extractFromDocuments,
   getInvalidUploadFiles,
   getSupportedUploadDescription,
@@ -14,7 +21,16 @@ const {
 } = require("./lib/extraction");
 const { bankConfig } = require("./lib/bankFile");
 const { validatePaymentRecord } = require("./lib/paymentRecord");
-const { exportQueuedPayments } = require("./lib/exportQueue");
+const {
+  exportQueuedPayments,
+  formatExportDatePart,
+  formatExportTimePart,
+} = require("./lib/exportQueue");
+
+function buildSupplierMasterExportFileName(records = [], date = new Date()) {
+  const supplierCount = Math.max(0, Array.isArray(records) ? records.length : 0);
+  return `supplier-master_${formatExportDatePart(date)}_${formatExportTimePart(date)}_${supplierCount}-suppliers.json`;
+}
 
 const app = express();
 const upload = multer({
@@ -83,6 +99,87 @@ app.delete("/api/queue", (req, res) => {
   }
 });
 
+app.get("/api/suppliers", (req, res) => {
+  try {
+    res.json({
+      records: readSuppliers(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "We could not load the supplier master list.",
+      details: error.message,
+    });
+  }
+});
+
+app.get("/api/suppliers/export", (req, res) => {
+  try {
+    const records = readSuppliers();
+    const fileName = buildSupplierMasterExportFileName(records);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.send(`${JSON.stringify(records, null, 2)}\n`);
+  } catch (error) {
+    res.status(500).json({
+      error: "We could not export the supplier master list.",
+      details: error.message,
+    });
+  }
+});
+
+app.post("/api/suppliers/resolve", (req, res) => {
+  try {
+    res.json(resolveSupplierMatch(req.body || {}));
+  } catch (error) {
+    res.status(500).json({
+      error: "We could not resolve the supplier against the master list.",
+      details: error.message,
+    });
+  }
+});
+
+app.post("/api/suppliers", (req, res) => {
+  try {
+    const savedSupplier = saveSupplier(req.body || {});
+    res.json({ supplier: savedSupplier });
+  } catch (error) {
+    res.status(400).json({
+      error: "We could not save this supplier profile.",
+      details: error.message,
+    });
+  }
+});
+
+app.post("/api/suppliers/import", upload.single("supplierMasterFile"), (req, res) => {
+  try {
+    if (!req.file?.buffer) {
+      return res.status(400).json({
+        error: "Choose a supplier master JSON file to upload.",
+      });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(req.file.buffer.toString("utf8"));
+    } catch (error) {
+      return res.status(400).json({
+        error: "Supplier master import failed. Upload a valid JSON file.",
+      });
+    }
+
+    const records = replaceSuppliers(parsed);
+    res.json({
+      records,
+      importedCount: records.length,
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: "Supplier master import failed.",
+      details: error.message,
+    });
+  }
+});
+
 app.post("/api/extract", upload.array("documents", 5), async (req, res) => {
   try {
     const files = req.files || [];
@@ -120,7 +217,9 @@ app.post("/api/extract", upload.array("documents", 5), async (req, res) => {
 
 app.post("/api/export", (req, res) => {
   try {
-    const result = exportQueuedPayments(req.body?.records);
+    const result = exportQueuedPayments(req.body?.records, {
+      currency: req.body?.currency,
+    });
 
     if (!result.ok) {
       return res.status(result.status).json(result.body);
@@ -141,7 +240,13 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Bank payment tool listening on http://localhost:${port}`);
-});
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Bank payment tool listening on http://localhost:${port}`);
+  });
+}
+
+module.exports = {
+  buildSupplierMasterExportFileName,
+};
