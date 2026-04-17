@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internal Bank Payment Tool</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Internal Finance Tool</p>
+        <h1>Bank Payment Extraction Tool</h1>
+        <p class="lede">
+          This tool reads invoice and supporting documents, pulls out the payment details it can
+          find, lets you correct the rest, and holds confirmed payments in a list until you export
+          the full bank payment text file.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="stage">
+          <span class="stage-number">1</span>
+          <div>
+            <h2>Upload documents</h2>
+          <p>Choose up to 5 documents for the payment currently under review. Larger mixed batches may slow extraction.</p>
+          </div>
+        </div>
+
+        <form id="uploadForm" class="upload-form">
+          <label class="native-file-input">
+            <input id="documents" name="documents" type="file" multiple accept=".txt,.md,.pdf,.docx,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+          </label>
+          <button type="submit" class="primary">Extract details</button>
+        </form>
+
+        <div id="statusBanner" class="status-banner muted">Waiting for documents</div>
+      </section>
+
+      <section class="panel">
+        <div class="stage">
+          <span class="stage-number">2</span>
+          <div>
+            <h2>Review extracted details</h2>
+            <p>Missing required fields are highlighted. Fill them in before confirming this payment.</p>
+          </div>
+        </div>
+
+        <div class="evidence-card">
+          <p class="label">Extraction Evidence</p>
+          <pre id="extractionEvidence">No extraction evidence yet</pre>
+        </div>
+
+        <form id="reviewForm" class="review-grid">
+          <label>
+            Supplier name
+            <input name="supplierName" />
+          </label>
+          <label class="required">
+            Invoice number
+            <input name="invoiceNumber" />
+          </label>
+          <label class="required">
+            Amount
+            <input name="amount" type="number" step="0.01" min="0" />
+          </label>
+          <label>
+            <span class="field-label">
+              <span>Currency</span>
+              <span id="currencyWarning" class="field-warning hidden">Verify currency code</span>
+            </span>
+            <input name="currency" value="SGD" />
+          </label>
+          <label>
+            Due date
+            <input name="dueDate" />
+          </label>
+          <label>
+            Payment reference
+            <input name="paymentReference" />
+          </label>
+          <label class="required">
+            Beneficiary bank identifier / SWIFT
+            <input name="bankSwiftCode" />
+          </label>
+          <label class="required">
+            Beneficiary account number
+            <input name="beneficiaryAccountNumber" />
+          </label>
+          <label class="required">
+            Beneficiary name
+            <input name="beneficiaryName" />
+          </label>
+          <label class="required">
+            Remark
+            <input name="remark" />
+          </label>
+        </form>
+
+        <div id="missingFields" class="missing-fields"></div>
+
+        <div class="preview-card">
+          <p class="label">Current transaction row preview</p>
+          <pre id="rowPreview">No payment row yet</pre>
+        </div>
+
+        <div class="actions review-actions">
+          <button id="confirmButton" class="primary" type="button">Confirm and add to list</button>
+          <button id="resetButton" class="ghost" type="button">Clear current form</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="stage">
+          <span class="stage-number">3</span>
+          <div>
+            <h2>Confirmed payment list</h2>
+            <p>Confirmed payments stay in this browser session and are grouped by currency for export.</p>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <p id="queueSummary" class="label">No confirmed payments yet</p>
+          <div id="queueList" class="queue-list"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <script src="/confirmedQueue.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+Supplier: Bright Supplies Pte Ltd
+Invoice Number: INV-7788
+Invoice Date: 14/04/2026
+Amount Due: SGD 345.67
+Due Date: 21/04/2026
+Beneficiary Name: Bright Supplies Pte Ltd
+Bank Swift: OCBCSGSGXXX
+Account Number: 622233344455
+Payment Reference: April office supplies

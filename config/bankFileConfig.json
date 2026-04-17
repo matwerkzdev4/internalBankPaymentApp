@@ -1,0 +1,34 @@
+{
+  "header": {
+    "recordType": "3004120260407",
+    "payerBankSwift": "OCBCSGSGXXX",
+    "payerAccountNumber": "601365950001",
+    "payerName": "Matwerkz Technologie",
+    "paymentType": "GIRO",
+    "scheduledPaymentDate": "07042026"
+  },
+  "layout": {
+    "lineLength": 1000,
+    "transaction": {
+      "bankAccountFieldStart": 0,
+      "bankAccountFieldLength": 45,
+      "beneficiaryNameStart": 45,
+      "beneficiaryNameLength": 143,
+      "amountStart": 188,
+      "amountLength": 17,
+      "remarkStart": 240
+    },
+    "header": {
+      "recordTypeStart": 0,
+      "recordTypeLength": 13,
+      "payerBankAccountStart": 13,
+      "payerBankAccountLength": 48,
+      "payerNameStart": 61,
+      "payerNameLength": 144,
+      "paymentTypeStart": 205,
+      "paymentTypeLength": 20,
+      "scheduledPaymentDateStart": 225,
+      "scheduledPaymentDateLength": 8
+    }
+  }
+}
