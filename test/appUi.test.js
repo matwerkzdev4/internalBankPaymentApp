@@ -2,6 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   getExtractionSourceLabel,
+  mergeSelectedFiles,
+  getSelectedFilesSummary,
   getUnsupportedFileMessage,
   getUploadLimitMessage,
   formatExtractionTime,
@@ -49,4 +51,44 @@ test("getExtractionSourceLabel collapses provider wording to the demo-safe label
 test("formatExtractionTime keeps the one-decimal-second display", () => {
   assert.equal(formatExtractionTime(1532), "1.5 s");
   assert.equal(formatExtractionTime(0), "0.0 s");
+});
+
+test("getSelectedFilesSummary reflects one or more chosen files", () => {
+  assert.equal(getSelectedFilesSummary(0), "No files selected");
+  assert.equal(getSelectedFilesSummary(1), "1 file selected");
+  assert.equal(getSelectedFilesSummary(3), "3 files selected");
+});
+
+test("mergeSelectedFiles appends a second picker cycle into the existing queue", () => {
+  const firstFile = {
+    name: "invoice.pdf",
+    size: 100,
+    lastModified: 1,
+    type: "application/pdf",
+  };
+  const secondFile = {
+    name: "bank-details.png",
+    size: 200,
+    lastModified: 2,
+    type: "image/png",
+  };
+
+  const result = mergeSelectedFiles([firstFile], [secondFile]);
+
+  assert.equal(result.duplicateCount, 0);
+  assert.deepEqual(result.files, [firstFile, secondFile]);
+});
+
+test("mergeSelectedFiles ignores exact duplicate files across picker cycles", () => {
+  const file = {
+    name: "invoice.pdf",
+    size: 100,
+    lastModified: 1,
+    type: "application/pdf",
+  };
+
+  const result = mergeSelectedFiles([file], [file]);
+
+  assert.equal(result.duplicateCount, 1);
+  assert.deepEqual(result.files, [file]);
 });

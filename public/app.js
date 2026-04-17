@@ -2,7 +2,11 @@ const uploadForm = typeof document !== "undefined" ? document.getElementById("up
 const reviewForm = typeof document !== "undefined" ? document.getElementById("reviewForm") : null;
 const confirmButton = typeof document !== "undefined" ? document.getElementById("confirmButton") : null;
 const resetButton = typeof document !== "undefined" ? document.getElementById("resetButton") : null;
+const clearSelectedFilesButton =
+  typeof document !== "undefined" ? document.getElementById("clearSelectedFilesButton") : null;
 const statusBanner = typeof document !== "undefined" ? document.getElementById("statusBanner") : null;
+const selectedFilesSummary = typeof document !== "undefined" ? document.getElementById("selectedFilesSummary") : null;
+const selectedFilesList = typeof document !== "undefined" ? document.getElementById("selectedFilesList") : null;
 const missingFields = typeof document !== "undefined" ? document.getElementById("missingFields") : null;
 const rowPreview = typeof document !== "undefined" ? document.getElementById("rowPreview") : null;
 const extractionEvidence = typeof document !== "undefined" ? document.getElementById("extractionEvidence") : null;
@@ -15,6 +19,7 @@ let currentRecord = { extracted: {}, corrected: {}, merged: {} };
 let confirmedRecords = [];
 let requiredFields = [];
 let latestExtractionMeta = {};
+let selectedFilesQueue = [];
 const MAX_UPLOAD_DOCUMENTS = 5;
 const supportedTextExtensions = new Set(["txt", "md"]);
 const supportedImageExtensions = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff"]);
@@ -83,6 +88,85 @@ function getUploadLimitMessage() {
 
 function getUnsupportedFileMessage() {
   return "Unsupported file type. Upload TXT, MD, PDF, DOCX, or common image files such as PNG, JPG, JPEG, WEBP, GIF, BMP, TIF, and TIFF.";
+}
+
+function buildSelectedFileKey(file = {}) {
+  return [
+    String(file.name || file.fileName || ""),
+    String(file.size || 0),
+    String(file.lastModified || 0),
+    String(file.type || file.mimetype || ""),
+  ].join("::");
+}
+
+function mergeSelectedFiles(existingFiles = [], newFiles = []) {
+  const mergedFiles = [...existingFiles];
+  const seen = new Set(existingFiles.map((file) => buildSelectedFileKey(file)));
+  let duplicateCount = 0;
+
+  for (const file of newFiles) {
+    const key = buildSelectedFileKey(file);
+    if (seen.has(key)) {
+      duplicateCount += 1;
+      continue;
+    }
+
+    seen.add(key);
+    mergedFiles.push(file);
+  }
+
+  return {
+    files: mergedFiles,
+    duplicateCount,
+  };
+}
+
+function getSelectedFilesSummary(fileCount) {
+  return fileCount
+    ? `${fileCount} file${fileCount === 1 ? "" : "s"} selected`
+    : "No files selected";
+}
+
+function renderSelectedFiles(files = []) {
+  if (!selectedFilesSummary || !selectedFilesList) {
+    return;
+  }
+
+  selectedFilesSummary.textContent = getSelectedFilesSummary(files.length);
+
+  if (!files.length) {
+    selectedFilesList.innerHTML = '<li class="selected-files-empty">Selected files will appear here.</li>';
+    return;
+  }
+
+  selectedFilesList.innerHTML = "";
+
+  files.forEach((file, index) => {
+    const item = document.createElement("li");
+    item.className = "selected-files-item";
+
+    const fileName = document.createElement("span");
+    fileName.className = "selected-file-name";
+    fileName.textContent = String(file.name || file.fileName || "(unnamed file)");
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "ghost selected-file-remove";
+    removeButton.textContent = "Remove";
+    removeButton.addEventListener("click", () => {
+      selectedFilesQueue = selectedFilesQueue.filter((_, fileIndex) => fileIndex !== index);
+      renderSelectedFiles(selectedFilesQueue);
+      setStatus(
+        selectedFilesQueue.length
+          ? "Selected file removed from the upload queue."
+          : "Selected file removed. No files remain in the upload queue.",
+        "muted"
+      );
+    });
+
+    item.append(fileName, removeButton);
+    selectedFilesList.appendChild(item);
+  });
 }
 
 function setStatus(message, type = "muted") {
@@ -304,6 +388,8 @@ function clearCurrentForm() {
   reviewForm.reset();
   currentRecord = { extracted: {}, corrected: {}, merged: {} };
   latestExtractionMeta = {};
+  selectedFilesQueue = [];
+  renderSelectedFiles(selectedFilesQueue);
   missingFields.textContent = "";
   extractionEvidence.textContent = "No extraction evidence yet";
   rowPreview.textContent = "No payment row yet";
@@ -320,12 +406,48 @@ function getQueuedDuplicateMessage(record = {}) {
   );
 }
 
-if (uploadForm && reviewForm && confirmButton && resetButton && fileInput) {
+if (uploadForm && reviewForm && confirmButton && resetButton && fileInput && clearSelectedFilesButton) {
+fileInput.addEventListener("change", () => {
+  const nextFiles = Array.from(fileInput.files || []);
+  if (!nextFiles.length) {
+    return;
+  }
+
+  if (nextFiles.some((file) => !isSupportedUploadFile(file))) {
+    setStatus(getUnsupportedFileMessage(), "warn");
+    fileInput.value = "";
+    return;
+  }
+
+  const mergedSelection = mergeSelectedFiles(selectedFilesQueue, nextFiles);
+  if (mergedSelection.files.length > MAX_UPLOAD_DOCUMENTS) {
+    setStatus(getUploadLimitMessage(), "warn");
+    fileInput.value = "";
+    return;
+  }
+
+  selectedFilesQueue = mergedSelection.files;
+  renderSelectedFiles(selectedFilesQueue);
+  setStatus(
+    mergedSelection.duplicateCount
+      ? `${getSelectedFilesSummary(selectedFilesQueue.length)}. ${mergedSelection.duplicateCount} duplicate file${mergedSelection.duplicateCount === 1 ? "" : "s"} ignored.`
+      : getSelectedFilesSummary(selectedFilesQueue.length),
+    "muted"
+  );
+  fileInput.value = "";
+});
+
+clearSelectedFilesButton.addEventListener("click", () => {
+  selectedFilesQueue = [];
+  fileInput.value = "";
+  renderSelectedFiles(selectedFilesQueue);
+  setStatus("Selected files cleared.", "muted");
+});
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const selectedFiles = Array.from(fileInput.files || []);
+  const selectedFiles = [...selectedFilesQueue];
 
   if (!selectedFiles.length) {
     setStatus("Choose at least one document before extraction.", "warn");
@@ -361,6 +483,9 @@ uploadForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  selectedFilesQueue = [];
+  fileInput.value = "";
+  renderSelectedFiles(selectedFilesQueue);
   currentRecord = data.paymentRecord;
   latestExtractionMeta = data.extractionMeta || {};
   setFormValues(currentRecord.merged);
@@ -483,6 +608,7 @@ resetButton.addEventListener("click", () => {
   setStatus("Current form cleared. Confirmed payments remain in the list.", "muted");
 });
 
+renderSelectedFiles([]);
 loadConfig();
 loadQueueFromServer()
   .then((records) => {
@@ -503,6 +629,8 @@ loadQueueFromServer()
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     getExtractionSourceLabel,
+    mergeSelectedFiles,
+    getSelectedFilesSummary,
     getUnsupportedFileMessage,
     getUploadLimitMessage,
     isSupportedUploadFile,
