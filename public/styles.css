@@ -110,6 +110,26 @@ pre {
   padding: 24px;
 }
 
+.operator-guide-card {
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: start;
+  padding: 22px 24px;
+  border: 1px solid rgba(214, 205, 188, 0.9);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255, 250, 242, 0.98), rgba(240, 248, 242, 0.96));
+  box-shadow: var(--shadow);
+}
+
+.operator-guide-list {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+}
+
 .stage {
   display: flex;
   gap: 14px;
@@ -122,6 +142,11 @@ pre {
   color: var(--muted);
 }
 
+.stage-copy {
+  display: grid;
+  gap: 4px;
+}
+
 .stage-number {
   width: 38px;
   height: 38px;
@@ -132,6 +157,15 @@ pre {
   background: var(--accent);
   color: white;
   font-weight: 700;
+}
+
+.checklist-hint {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef6f1;
+  border: 1px solid #cddfd4;
+  color: var(--accent-strong);
 }
 
 .upload-form,
@@ -210,6 +244,36 @@ button.ghost {
   border-radius: 18px;
   padding: 18px;
   background: #fdf8ef;
+}
+
+.progress-card {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fdf8ef;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e8dfcf;
+}
+
+.progress-bar-fill {
+  width: 40%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, #138b64 100%);
+  animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+.progress-copy {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .selected-files-list {
@@ -385,8 +449,10 @@ button:disabled {
 
 .review-grid label {
   display: grid;
+  grid-template-rows: minmax(24px, auto) auto;
   gap: 8px;
   font-weight: 600;
+  align-content: start;
 }
 
 .field-label {
@@ -402,12 +468,29 @@ button:disabled {
   font-weight: 700;
 }
 
+.supplier-check-notice {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.section-two-guidance {
+  margin-top: 18px;
+  min-height: 24px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .hidden {
   display: none !important;
 }
 
 .review-grid input {
   width: 100%;
+  min-height: 46px;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -421,10 +504,18 @@ button:disabled {
 }
 
 .missing-fields {
-  margin-top: 18px;
+  margin-top: 10px;
   min-height: 24px;
   color: var(--warn);
   font-weight: 600;
+}
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
 }
 
 @media (max-width: 720px) {
@@ -435,6 +526,10 @@ button:disabled {
 
   .top-row {
     grid-template-columns: 1fr;
+  }
+
+  .operator-guide-card {
+    flex-direction: column;
   }
 
   .hero,

@@ -15,8 +15,11 @@ const {
   getSupplierResolutionUiState,
   getSupplierReviewMissingFields,
   mergeSelectedFiles,
+  normalizeCurrencyInput,
   normalizeSupplierLookupKey,
   setSupplierMasterStatus,
+  shouldShowSupplierReview,
+  updateSupplierReviewRequirement,
   triggerBrowserDownload,
   getSelectedFilesSummary,
   getUnsupportedFileMessage,
@@ -69,9 +72,9 @@ test("formatExtractionTime keeps the one-decimal-second display", () => {
 });
 
 test("getSelectedFilesSummary reflects one or more chosen files", () => {
-  assert.equal(getSelectedFilesSummary(0), "No files selected");
-  assert.equal(getSelectedFilesSummary(1), "1 file selected");
-  assert.equal(getSelectedFilesSummary(3), "3 files selected");
+  assert.equal(getSelectedFilesSummary(0), "No files selected yet");
+  assert.equal(getSelectedFilesSummary(1), "Step 1 ready: 1 file selected");
+  assert.equal(getSelectedFilesSummary(3), "Step 1 ready: 3 files selected");
 });
 
 test("mergeSelectedFiles appends a second picker cycle into the existing queue", () => {
@@ -237,8 +240,8 @@ test("buildNewSupplierPayeeExportText formats payee details into a plain text ex
 test("getSupplierResolutionUiState skips review for matched suppliers", () => {
   assert.deepEqual(getSupplierResolutionUiState({ matchStatus: "matched" }), {
     requiresReview: false,
-    title: "Supplier found in master list",
-    message: "A saved supplier profile was found and its details were used for any missing bank fields.",
+    title: "Supplier found in saved list",
+    message: "A saved supplier profile was found and used for any missing bank details.",
     statusType: "ready",
   });
 });
@@ -262,6 +265,30 @@ test("getSupplierReviewMissingFields requires supplier name and bank details", (
     }),
     []
   );
+});
+
+test("normalizeCurrencyInput accepts lower-case currency values", () => {
+  assert.equal(normalizeCurrencyInput("usd"), "USD");
+  assert.equal(normalizeCurrencyInput("rmb"), "RMB");
+  assert.equal(normalizeCurrencyInput("cny"), "RMB");
+});
+
+test("shouldShowSupplierReview opens review when a new supplier name exists", () => {
+  updateSupplierReviewRequirement({ matchStatus: "not_found" }, "Bright Supplies Pte Ltd");
+  assert.equal(shouldShowSupplierReview({ matchStatus: "not_found" }, { supplierName: "Bright Supplies Pte Ltd" }), true);
+  assert.equal(
+    shouldShowSupplierReview(
+      { matchStatus: "cannot_match" },
+      { supplierName: "" }
+    ),
+    false
+  );
+});
+
+test("updateSupplierReviewRequirement follows supplier master matching state", () => {
+  assert.equal(updateSupplierReviewRequirement({ matchStatus: "matched" }, "Bright Supplies Pte Ltd"), false);
+  assert.equal(updateSupplierReviewRequirement({ matchStatus: "not_found" }, "Bright Supplies Pte Ltd"), true);
+  assert.equal(updateSupplierReviewRequirement({ matchStatus: "cannot_match" }, ""), false);
 });
 
 test("loadSupplierMasterSummary is exposed for supplier master management flow", () => {
@@ -354,9 +381,24 @@ test("index.html no longer includes the old extracted-details persistence senten
 test("index.html includes the New Supplier/Payee List section after confirmed payments", () => {
   const indexHtml = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
   const confirmedIndex = indexHtml.indexOf("<h2>Confirmed Payment List</h2>");
-  const payeeIndex = indexHtml.indexOf("<h2>New Supplier/Payee List</h2>");
+  const payeeIndex = indexHtml.indexOf("<h2>New Supplier / Payee Setup List</h2>");
 
   assert.notEqual(confirmedIndex, -1);
   assert.notEqual(payeeIndex, -1);
   assert.ok(confirmedIndex < payeeIndex);
+});
+
+test("index.html includes the finance operator quick-start card and confirm summary", () => {
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+
+  assert.match(indexHtml, /Quick Start For Finance Operators/);
+  assert.match(indexHtml, /Confirm payment into list/);
+  assert.match(indexHtml, /Confirm supplier details and save to supplier list/);
+  assert.match(indexHtml, /Complete the supplier check before confirming this payment\./);
+  assert.match(indexHtml, /sectionTwoGuidance/);
+  assert.match(indexHtml, /What the app did: it filled what it could\./);
+  assert.match(indexHtml, /What to do now: check the highlighted fields and fix anything missing\./);
+  assert.match(indexHtml, /Extraction in progress/);
+  assert.equal(indexHtml.includes("Bank code used for international payment."), false);
+  assert.equal(indexHtml.includes("Before You Confirm"), false);
 });

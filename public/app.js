@@ -7,6 +7,8 @@ const clearSelectedFilesButton =
 const statusBanner = typeof document !== "undefined" ? document.getElementById("statusBanner") : null;
 const selectedFilesSummary = typeof document !== "undefined" ? document.getElementById("selectedFilesSummary") : null;
 const selectedFilesList = typeof document !== "undefined" ? document.getElementById("selectedFilesList") : null;
+const sectionTwoGuidance =
+  typeof document !== "undefined" ? document.getElementById("sectionTwoGuidance") : null;
 const missingFields = typeof document !== "undefined" ? document.getElementById("missingFields") : null;
 const rowPreview = typeof document !== "undefined" ? document.getElementById("rowPreview") : null;
 const extractionEvidence = typeof document !== "undefined" ? document.getElementById("extractionEvidence") : null;
@@ -36,6 +38,14 @@ const supplierMasterSummary =
   typeof document !== "undefined" ? document.getElementById("supplierMasterSummary") : null;
 const supplierMasterStatus =
   typeof document !== "undefined" ? document.getElementById("supplierMasterStatus") : null;
+const onboardingCard =
+  typeof document !== "undefined" ? document.getElementById("onboardingCard") : null;
+const dismissOnboardingButton =
+  typeof document !== "undefined" ? document.getElementById("dismissOnboardingButton") : null;
+const extractionProgress =
+  typeof document !== "undefined" ? document.getElementById("extractionProgress") : null;
+const supplierCheckNotice =
+  typeof document !== "undefined" ? document.getElementById("supplierCheckNotice") : null;
 
 let currentRecord = { extracted: {}, corrected: {}, merged: {} };
 let confirmedRecords = [];
@@ -43,6 +53,7 @@ let requiredFields = [];
 let latestExtractionMeta = {};
 let selectedFilesQueue = [];
 let sessionNewSupplierKeys = new Set();
+let supplierReviewRequired = false;
 let latestSupplierResolution = {
   matchStatus: "cannot_match",
   matched: false,
@@ -85,6 +96,19 @@ const supplierFieldNames = [
   "beneficiaryAccountNumber",
   "paymentReference",
 ];
+const onboardingStorageKey = "bank-payment-tool-hide-quick-start";
+const fieldLabels = {
+  supplierName: "supplier name",
+  invoiceNumber: "invoice number",
+  amount: "amount",
+  currency: "currency code",
+  dueDate: "due date",
+  paymentReference: "payment reference",
+  bankSwiftCode: "beneficiary bank code / SWIFT",
+  beneficiaryAccountNumber: "beneficiary account number",
+  beneficiaryName: "beneficiary name",
+  remark: "remark",
+};
 
 function normalizeSupplierLookupKey(value = "") {
   return String(value ?? "").replace(/\s+/g, " ").trim().toUpperCase();
@@ -215,8 +239,8 @@ function getSupplierResolutionUiState(resolution = {}) {
   if (matchStatus === "matched") {
     return {
       requiresReview: false,
-      title: "Supplier found in master list",
-      message: "A saved supplier profile was found and its details were used for any missing bank fields.",
+      title: "Supplier found in saved list",
+      message: "A saved supplier profile was found and used for any missing bank details.",
       statusType: "ready",
     };
   }
@@ -225,15 +249,15 @@ function getSupplierResolutionUiState(resolution = {}) {
     return {
       requiresReview: true,
       title: "Review and save this new supplier",
-      message: "This supplier is not in the master list yet. Confirm the supplier profile before payment confirmation.",
+      message: "This supplier is not in the saved list yet. Save it on this device before confirming the payment.",
       statusType: "warn",
     };
   }
 
   return {
     requiresReview: true,
-    title: "Replace the supplier to continue",
-    message: "Supplier name is too unclear to match. Enter or confirm a supplier profile before payment confirmation.",
+    title: "Supplier needs a clearer check",
+    message: "The supplier name is too unclear to match. Confirm the supplier details before payment confirmation.",
     statusType: "warn",
   };
 }
@@ -254,6 +278,75 @@ function getSupplierReviewMissingFields(values = {}) {
   }
 
   return missingFields;
+}
+
+function getFieldInstruction(fieldName) {
+  const label = fieldLabels[fieldName] || fieldName;
+  return `Enter ${label} before confirming this payment.`;
+}
+
+function buildValidationGuidance(missing = []) {
+  if (!missing.length) {
+    return "Payment details are ready. Confirm the payment into the list when the supplier check is complete.";
+  }
+
+  return missing.map((fieldName) => getFieldInstruction(fieldName));
+}
+
+function normalizeCurrencyInput(value = "") {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim().toUpperCase();
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized === "CNY" ? "RMB" : normalized;
+}
+
+function shouldShowSupplierReview(resolution = latestSupplierResolution, values = {}) {
+  const hasSupplierName = Boolean(normalizeSupplierLookupKey(values.supplierName || currentRecord?.merged?.supplierName));
+  return Boolean(supplierReviewRequired && hasSupplierName && getSupplierResolutionUiState(resolution).requiresReview);
+}
+
+function setExtractionProgressVisible(isVisible) {
+  if (!extractionProgress) {
+    return;
+  }
+
+  extractionProgress.classList.toggle("hidden", !isVisible);
+}
+
+function setSectionTwoGuidance(message = "", type = "warn") {
+  if (!sectionTwoGuidance) {
+    return;
+  }
+
+  if (!message) {
+    sectionTwoGuidance.textContent = "";
+    return;
+  }
+
+  sectionTwoGuidance.textContent = message;
+}
+
+function updateSupplierReviewRequirement(resolution = latestSupplierResolution, supplierName = "") {
+  const hasSupplierName = Boolean(normalizeSupplierLookupKey(supplierName || currentRecord?.merged?.supplierName));
+  supplierReviewRequired = Boolean(hasSupplierName && resolution.matchStatus !== "matched");
+  return supplierReviewRequired;
+}
+
+function setOnboardingVisibility() {
+  if (!onboardingCard) {
+    return;
+  }
+
+  let hideGuide = false;
+  try {
+    hideGuide = typeof window !== "undefined" && window.localStorage?.getItem(onboardingStorageKey) === "true";
+  } catch (error) {
+    hideGuide = false;
+  }
+
+  onboardingCard.classList.toggle("hidden", hideGuide);
 }
 
 function getFileExtension(file = {}) {
@@ -329,8 +422,8 @@ function mergeSelectedFiles(existingFiles = [], newFiles = []) {
 
 function getSelectedFilesSummary(fileCount) {
   return fileCount
-    ? `${fileCount} file${fileCount === 1 ? "" : "s"} selected`
-    : "No files selected";
+    ? `Step 1 ready: ${fileCount} file${fileCount === 1 ? "" : "s"} selected`
+    : "No files selected yet";
 }
 
 function renderSelectedFiles(files = []) {
@@ -341,7 +434,8 @@ function renderSelectedFiles(files = []) {
   selectedFilesSummary.textContent = getSelectedFilesSummary(files.length);
 
   if (!files.length) {
-    selectedFilesList.innerHTML = '<li class="selected-files-empty">Selected files will appear here.</li>';
+    selectedFilesList.innerHTML =
+      '<li class="selected-files-empty">Your selected files will appear here before reading starts.</li>';
     return;
   }
 
@@ -470,9 +564,8 @@ function getSupplierReviewValues() {
 }
 
 function applyValidation(missing = []) {
-  missingFields.textContent = missing.length
-    ? `Fill in these required fields before confirming: ${missing.join(", ")}`
-    : "All required fields are ready for confirmation.";
+  const guidance = buildValidationGuidance(missing);
+  missingFields.innerHTML = guidance.map((message) => `<div>${message}</div>`).join("");
 
   for (const fieldName of fieldNames) {
     const input = reviewForm.elements[fieldName];
@@ -503,11 +596,11 @@ function syncCurrencyWarning(meta = {}) {
 
 function renderEvidence(meta = {}, validation = { missingFields: [] }) {
   const lines = [
-    `OpenAI API key available: ${meta.openAiAvailable ? "Yes" : "No"}`,
-    `Provider used: ${getExtractionSourceLabel(meta)}`,
-    `Currency extracted: ${meta.currencyExtracted ? "Yes" : "No"}`,
-    `Missing required fields: ${validation.missingFields?.length ? "Yes" : "No"}`,
-    `Time taken: ${formatExtractionTime(meta.totalExtractionMs)}`,
+    `Server AI backup available: ${meta.openAiAvailable ? "Yes" : "No"}`,
+    `Source used: ${getExtractionSourceLabel(meta)}`,
+    `Currency found in the documents: ${meta.currencyExtracted ? "Yes" : "No"}`,
+    `More operator input needed: ${validation.missingFields?.length ? "Yes" : "No"}`,
+    `Reading time: ${formatExtractionTime(meta.totalExtractionMs)}`,
   ];
 
   extractionEvidence.textContent = lines.join("\n");
@@ -528,11 +621,11 @@ async function loadSupplierMasterSummary() {
 
     const supplierCount = Array.isArray(data.records) ? data.records.length : 0;
     supplierMasterSummary.textContent = supplierCount
-      ? `${supplierCount} Supplier profile${supplierCount === 1 ? "" : "s"} saved on this device. Importing an existing supplier master JSON file will replace this local list.`
-      : "0 Supplier profiles saved on this device. Importing an existing supplier master JSON file will replace this local list.";
+      ? `${supplierCount} supplier profile${supplierCount === 1 ? "" : "s"} saved on this device. Importing a supplier list JSON file will replace this local list.`
+      : "0 supplier profiles saved on this device. Importing a supplier list JSON file will replace this local list.";
   } catch (error) {
     supplierMasterSummary.textContent =
-      "0 Supplier profiles saved on this device. Importing an existing supplier master JSON file will replace this local list.";
+      "0 supplier profiles saved on this device. Importing a supplier list JSON file will replace this local list.";
   }
 }
 
@@ -542,10 +635,26 @@ function syncSupplierReviewUi(resolution = latestSupplierResolution) {
   }
 
   const uiState = getSupplierResolutionUiState(resolution);
-  supplierReviewPanel.classList.toggle("hidden", !uiState.requiresReview);
+  const showReview = shouldShowSupplierReview(resolution, getCurrentMergedRecord());
+  supplierReviewPanel.classList.toggle("hidden", !showReview);
   supplierReviewTitle.textContent = uiState.title;
   supplierReviewMessage.textContent = uiState.message;
-  confirmButton.disabled = uiState.requiresReview;
+  confirmButton.disabled = showReview;
+  if (supplierCheckNotice) {
+    supplierCheckNotice.classList.toggle("hidden", !showReview);
+  }
+
+  if (showReview) {
+    setSectionTwoGuidance(
+      "New supplier detected. Review and confirm the supplier details before adding it to the supplier master list."
+    );
+    if (supplierReviewMissingFields) {
+      supplierReviewMissingFields.textContent =
+        "Confirm the supplier details and save them to the supplier master list before confirming payment.";
+    }
+  } else {
+    setSectionTwoGuidance("");
+  }
 }
 
 async function loadConfig() {
@@ -581,7 +690,7 @@ function getCurrentMergedRecord() {
     ...currentRecord.merged,
     ...getCorrectedValues(),
     amount: String(reviewForm.elements.amount.value || "").trim(),
-    currency: window.ConfirmedQueue.normalizeCurrency(reviewForm.elements.currency.value || ""),
+    currency: normalizeCurrencyInput(reviewForm.elements.currency.value || ""),
     bankSwiftCode: String(reviewForm.elements.bankSwiftCode.value || "").trim().toUpperCase(),
     beneficiaryAccountNumber: String(reviewForm.elements.beneficiaryAccountNumber.value || "")
       .replace(/\s+/g, "")
@@ -652,6 +761,35 @@ async function loadQueueFromServer() {
   return attachSessionNewSupplierFlags(Array.isArray(data.records) ? data.records : []);
 }
 
+function shouldConfirmHighRiskExport(currency, recordsForCurrency = []) {
+  const hasNewSupplierPayees = recordsForCurrency.some((record) => record.isNewSupplierPayee);
+  const hasUnclearCurrency = recordsForCurrency.some(
+    (record) => !String(record.currency || "").trim() || String(record.currency || "").trim().toUpperCase() !== currency
+  );
+  const hasUnmatchedSupplier = recordsForCurrency.some(
+    (record) => !normalizeSupplierLookupKey(record.normalizedSupplierKey || record.supplierName)
+  );
+
+  const warnings = [];
+  if (hasNewSupplierPayees) {
+    warnings.push(`new payees exist in the ${currency} queue`);
+  }
+  if (hasUnclearCurrency) {
+    warnings.push("one or more payments have unusual currency data");
+  }
+  if (hasUnmatchedSupplier) {
+    warnings.push("one or more payments do not have a clear supplier key");
+  }
+
+  if (!warnings.length || typeof window === "undefined" || typeof window.confirm !== "function") {
+    return true;
+  }
+
+  return window.confirm(
+    `Please double-check before export: ${warnings.join(", ")}. Continue exporting the ${currency} bank file?`
+  );
+}
+
 async function exportCurrencyQueue(currency) {
   const recordsForCurrency = confirmedRecords.filter(
     (record) => window.ConfirmedQueue.normalizeCurrency(record.currency) === currency
@@ -663,6 +801,10 @@ async function exportCurrencyQueue(currency) {
   }
 
   const hasNewSupplierPayees = recordsForCurrency.some((record) => record.isNewSupplierPayee);
+  if (!shouldConfirmHighRiskExport(currency, recordsForCurrency)) {
+    setStatus(`Export stopped. Review the ${currency} queue before exporting.`, "warn");
+    return;
+  }
 
   try {
     const response = await fetch("/api/export", {
@@ -692,8 +834,8 @@ async function exportCurrencyQueue(currency) {
     triggerBrowserDownload(blob, fileName);
     setStatus(
       hasNewSupplierPayees
-        ? `Confirmed payment export completed: ${fileName}. New payees exist in the ${currency} Queue. Create them in the bank application before payment processing.`
-        : `Confirmed payment export completed: ${fileName}`,
+        ? `Export completed: ${fileName}. New payees are still in the ${currency} setup list, so create them in the bank application before processing payment.`
+        : `Export completed: ${fileName}`,
       "ready"
     );
   } catch (error) {
@@ -725,8 +867,8 @@ function renderQueue() {
   queueList.innerHTML = "";
   const groupedQueues = window.ConfirmedQueue.groupRecordsByCurrency(confirmedRecords);
   queueSummary.textContent = confirmedRecords.length
-    ? `${confirmedRecords.length} confirmed payment${confirmedRecords.length === 1 ? "" : "s"} across ${groupedQueues.length} currency queue${groupedQueues.length === 1 ? "" : "s"}`
-    : "No confirmed payments yet";
+    ? `Step 3 ready: ${confirmedRecords.length} confirmed payment${confirmedRecords.length === 1 ? "" : "s"} across ${groupedQueues.length} currency queue${groupedQueues.length === 1 ? "" : "s"}`
+    : "No confirmed payments yet. Confirm a payment in step 2 to build the export list.";
 
   groupedQueues.forEach((group) => {
     const section = document.createElement("section");
@@ -738,17 +880,17 @@ function renderQueue() {
     const titleWrap = document.createElement("div");
     const title = document.createElement("h3");
     title.className = "currency-queue-title";
-    title.textContent = `${group.currency} Queue`;
+    title.textContent = `${group.currency} export queue`;
 
     const meta = document.createElement("p");
     meta.className = "currency-queue-meta";
-    meta.textContent = `${group.items.length} confirmed payment${group.items.length === 1 ? "" : "s"} ready for export`;
+    meta.textContent = `${group.items.length} confirmed payment${group.items.length === 1 ? "" : "s"} ready to export`;
     titleWrap.append(title, meta);
 
     const exportCurrencyButton = document.createElement("button");
     exportCurrencyButton.type = "button";
     exportCurrencyButton.className = "primary currency-export";
-    exportCurrencyButton.textContent = `Export ${group.currency} .txt file`;
+    exportCurrencyButton.textContent = `Export ${group.currency} bank file`;
     exportCurrencyButton.addEventListener("click", () => {
       exportCurrencyQueue(group.currency);
     });
@@ -812,8 +954,8 @@ function renderNewSupplierPayeeList() {
   payeeList.innerHTML = "";
   const groupedPayees = buildNewSupplierPayeeGroups(confirmedRecords);
   payeeSummary.textContent = groupedPayees.length
-    ? `${groupedPayees.reduce((count, group) => count + group.items.length, 0)} new supplier/payee item${groupedPayees.reduce((count, group) => count + group.items.length, 0) === 1 ? "" : "s"} across ${groupedPayees.length} currency queue${groupedPayees.length === 1 ? "" : "s"}`
-    : "No new supplier/payee items yet";
+    ? `Step 4 attention: ${groupedPayees.reduce((count, group) => count + group.items.length, 0)} new supplier/payee item${groupedPayees.reduce((count, group) => count + group.items.length, 0) === 1 ? "" : "s"} across ${groupedPayees.length} currency queue${groupedPayees.length === 1 ? "" : "s"}`
+    : "No new supplier/payee items yet. This list stays empty when all suppliers already exist.";
 
   groupedPayees.forEach((group) => {
     const section = document.createElement("section");
@@ -825,7 +967,7 @@ function renderNewSupplierPayeeList() {
     const titleWrap = document.createElement("div");
     const title = document.createElement("h3");
     title.className = "currency-queue-title";
-    title.textContent = `${group.currency} Queue`;
+    title.textContent = `${group.currency} payee setup queue`;
 
     const meta = document.createElement("p");
     meta.className = "currency-queue-meta";
@@ -835,7 +977,7 @@ function renderNewSupplierPayeeList() {
     const exportCurrencyButton = document.createElement("button");
     exportCurrencyButton.type = "button";
     exportCurrencyButton.className = "primary currency-export";
-    exportCurrencyButton.textContent = `Export ${group.currency} .txt file`;
+    exportCurrencyButton.textContent = `Export ${group.currency} payee list`;
     exportCurrencyButton.addEventListener("click", () => {
       exportNewSupplierPayeeQueue(group.currency);
     });
@@ -872,6 +1014,7 @@ function clearCurrentForm() {
   reviewForm.reset();
   currentRecord = { extracted: {}, corrected: {}, merged: {} };
   latestExtractionMeta = {};
+  supplierReviewRequired = false;
   latestSupplierResolution = {
     matchStatus: "cannot_match",
     matched: false,
@@ -883,24 +1026,45 @@ function clearCurrentForm() {
     supplierReviewForm.reset();
   }
   renderSelectedFiles(selectedFilesQueue);
-  missingFields.textContent = "";
+  setSectionTwoGuidance("");
   if (supplierReviewMissingFields) {
     supplierReviewMissingFields.textContent = "";
   }
   extractionEvidence.textContent = "No extraction evidence yet";
   rowPreview.textContent = "No payment row yet";
+  setExtractionProgressVisible(false);
   syncCurrencyWarning({});
-  syncSupplierReviewUi(latestSupplierResolution);
+  supplierReviewPanel.classList.add("hidden");
+  if (supplierCheckNotice) {
+    supplierCheckNotice.classList.add("hidden");
+  }
+  confirmButton.disabled = false;
   applyValidation([]);
 }
 
 function getQueuedDuplicateMessage(record = {}) {
   return (
-    "This invoice is already in the confirmed queue for this session: " +
+    "This invoice is already in the confirmed payment list for this session: " +
     `${record.invoiceNumber || "(no invoice number)"} | ` +
     `${record.supplierName || "(no supplier)"} | ` +
-    `${record.amount || "(no amount)"}. Remove the queued item first if you want to add it again.`
+    `${record.amount || "(no amount)"}. Remove the existing item first if you want to add it again.`
   );
+}
+
+if (dismissOnboardingButton) {
+  dismissOnboardingButton.addEventListener("click", () => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(onboardingStorageKey, "true");
+      }
+    } catch (error) {
+      // Ignore storage errors and still hide the card for this page view.
+    }
+
+    if (onboardingCard) {
+      onboardingCard.classList.add("hidden");
+    }
+  });
 }
 
 if (
@@ -949,7 +1113,7 @@ clearSelectedFilesButton.addEventListener("click", () => {
   selectedFilesQueue = [];
   fileInput.value = "";
   renderSelectedFiles(selectedFilesQueue);
-  setStatus("Selected files cleared.", "muted");
+  setStatus("Selected files cleared. Step 1 is waiting for documents again.", "muted");
 });
 
 uploadForm.addEventListener("submit", async (event) => {
@@ -958,7 +1122,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const selectedFiles = [...selectedFilesQueue];
 
   if (!selectedFiles.length) {
-    setStatus("Choose at least one document before extraction.", "warn");
+    setStatus("Choose at least one document before reading payment details.", "warn");
     return;
   }
 
@@ -972,92 +1136,139 @@ uploadForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  setStatus("Extracting details from your documents...", "muted");
+  setStatus("Reading payment details from your documents...", "muted");
+  setExtractionProgressVisible(true);
 
   const formData = new FormData();
   for (const file of selectedFiles) {
     formData.append("documents", file);
   }
 
-  const response = await fetch("/api/extract", {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    setStatus(data.error || "Extraction failed.", "warn");
-    return;
-  }
-
-  selectedFilesQueue = [];
-  fileInput.value = "";
-  renderSelectedFiles(selectedFilesQueue);
-  currentRecord = data.paymentRecord;
-  latestExtractionMeta = data.extractionMeta || {};
-  let mergedValues = currentRecord.merged;
-
   try {
-    latestSupplierResolution = await resolveSupplier(mergedValues);
-  } catch (error) {
-    latestSupplierResolution = {
-      matchStatus: "cannot_match",
-      matched: false,
-      supplier: null,
-      normalizedSupplierKey: normalizeSupplierLookupKey(mergedValues.supplierName) || null,
-    };
-  }
+    const response = await fetch("/api/extract", {
+      method: "POST",
+      body: formData,
+    });
 
-  mergedValues = applySupplierDefaults(mergedValues, latestSupplierResolution.supplier);
-  currentRecord.merged = mergedValues;
-  setFormValues(mergedValues);
-  setSupplierReviewValues(mergedValues);
-  renderEvidence(latestExtractionMeta, data.validation);
-  applyValidation(data.validation.missingFields);
-  if (supplierReviewMissingFields) {
-    supplierReviewMissingFields.textContent = "";
-  }
-  syncSupplierReviewUi(latestSupplierResolution);
-  updatePreview();
-  const queuedDuplicate = window.ConfirmedQueue.findQueuedDuplicate(currentRecord.merged, confirmedRecords);
-  const supplierUiState = getSupplierResolutionUiState(latestSupplierResolution);
-  const statusMessage = queuedDuplicate
-    ? getQueuedDuplicateMessage(currentRecord.merged)
-    : latestSupplierResolution.matchStatus === "matched"
-      ? "Existing supplier found. Saved supplier details were used for any missing bank fields."
-      : latestSupplierResolution.matchStatus === "not_found"
-        ? "New supplier found. Review and save the supplier profile before payment confirmation."
-        : "Supplier name is unclear. Confirm the supplier profile before payment confirmation.";
-  setStatus(
-    queuedDuplicate
-      ? statusMessage
-      : supplierUiState.requiresReview
+    const data = await response.json();
+
+    if (!response.ok) {
+      setStatus(data.error || "Extraction failed.", "warn");
+      return;
+    }
+
+    selectedFilesQueue = [];
+    fileInput.value = "";
+    renderSelectedFiles(selectedFilesQueue);
+    currentRecord = data.paymentRecord;
+    latestExtractionMeta = data.extractionMeta || {};
+    let mergedValues = currentRecord.merged;
+
+    try {
+      latestSupplierResolution = await resolveSupplier(mergedValues);
+    } catch (error) {
+      latestSupplierResolution = {
+        matchStatus: "cannot_match",
+        matched: false,
+        supplier: null,
+        normalizedSupplierKey: normalizeSupplierLookupKey(mergedValues.supplierName) || null,
+      };
+    }
+
+    mergedValues = applySupplierDefaults(mergedValues, latestSupplierResolution.supplier);
+    currentRecord.merged = mergedValues;
+    updateSupplierReviewRequirement(latestSupplierResolution, mergedValues.supplierName);
+    setFormValues(mergedValues);
+    setSupplierReviewValues(mergedValues);
+    renderEvidence(latestExtractionMeta, data.validation);
+    applyValidation(data.validation.missingFields);
+    if (supplierReviewMissingFields) {
+      supplierReviewMissingFields.textContent = "";
+    }
+    syncSupplierReviewUi(latestSupplierResolution);
+    updatePreview();
+    const queuedDuplicate = window.ConfirmedQueue.findQueuedDuplicate(currentRecord.merged, confirmedRecords);
+    const supplierUiState = getSupplierResolutionUiState(latestSupplierResolution);
+    const statusMessage = queuedDuplicate
+      ? getQueuedDuplicateMessage(currentRecord.merged)
+      : latestSupplierResolution.matchStatus === "matched"
+        ? "Step 2 ready. A saved supplier was found and used for any missing bank details."
+        : latestSupplierResolution.matchStatus === "not_found"
+          ? "New supplier found. Review and save the supplier before payment confirmation."
+          : "Supplier name is unclear. Confirm the supplier details before payment confirmation.";
+    setStatus(
+      queuedDuplicate
         ? statusMessage
-        : data.validation.isValid
+        : supplierUiState.requiresReview
           ? statusMessage
-          : "Details found. Fill the missing fields before confirming this payment.",
-    queuedDuplicate ? "warn" : supplierUiState.statusType
-  );
+          : data.validation.isValid
+            ? statusMessage
+            : "Details found. Follow the step 2 instructions before confirming this payment.",
+      queuedDuplicate ? "warn" : supplierUiState.statusType
+    );
+  } catch (error) {
+    setStatus("We could not finish extraction. Please try again.", "warn");
+  } finally {
+    setExtractionProgressVisible(false);
+  }
 });
 
 reviewForm.addEventListener("input", () => {
   const corrected = getCorrectedValues();
+  updateSupplierReviewRequirement(latestSupplierResolution, corrected.supplierName);
   const missing = requiredFields.filter((fieldName) => !String(corrected[fieldName] || "").trim());
   applyValidation(missing);
   setSupplierReviewValues({
     ...getSupplierReviewValues(),
     ...corrected,
   });
+  syncSupplierReviewUi(latestSupplierResolution);
   updatePreview();
+});
+
+reviewForm.elements.currency.addEventListener("blur", () => {
+  const normalized = normalizeCurrencyInput(reviewForm.elements.currency.value || "");
+  if (normalized) {
+    reviewForm.elements.currency.value = normalized;
+    updatePreview();
+  }
+});
+
+reviewForm.elements.supplierName.addEventListener("blur", async () => {
+  const supplierName = String(reviewForm.elements.supplierName.value || "").trim();
+  if (!supplierName) {
+    latestSupplierResolution = {
+      matchStatus: "cannot_match",
+      matched: false,
+      supplier: null,
+      normalizedSupplierKey: null,
+    };
+    updateSupplierReviewRequirement(latestSupplierResolution, "");
+    syncSupplierReviewUi(latestSupplierResolution);
+    return;
+  }
+
+  try {
+    latestSupplierResolution = await resolveSupplier({ supplierName });
+  } catch (error) {
+    latestSupplierResolution = {
+      matchStatus: "cannot_match",
+      matched: false,
+      supplier: null,
+      normalizedSupplierKey: normalizeSupplierLookupKey(supplierName) || null,
+    };
+  }
+
+  updateSupplierReviewRequirement(latestSupplierResolution, supplierName);
+  syncSupplierReviewUi(latestSupplierResolution);
 });
 
 supplierReviewForm.addEventListener("input", () => {
   if (supplierReviewMissingFields) {
     const missing = getSupplierReviewMissingFields(getSupplierReviewValues());
     supplierReviewMissingFields.textContent = missing.length
-      ? `There are insufficient details to create this supplier profile. Fill in these supplier fields before saving: ${missing.join(", ")}`
-      : "Supplier profile is ready to save.";
+      ? buildValidationGuidance(missing).join(" ")
+      : "Supplier profile is ready to save on this device.";
   }
 });
 
@@ -1067,13 +1278,13 @@ saveSupplierButton.addEventListener("click", async () => {
 
   if (supplierReviewMissingFields) {
     supplierReviewMissingFields.textContent = missing.length
-      ? `Fill in these supplier fields before saving: ${missing.join(", ")}`
+      ? buildValidationGuidance(missing).join(" ")
       : "";
   }
 
   if (missing.length) {
     setStatus(
-      "There are insufficient details to create this supplier profile. Add the supplier name, beneficiary bank identifier / SWIFT, and beneficiary account number.",
+      "This supplier cannot be saved yet. Add the supplier name, beneficiary bank code / SWIFT, and beneficiary account number.",
       "warn"
     );
     return;
@@ -1088,6 +1299,7 @@ saveSupplierButton.addEventListener("click", async () => {
       supplier: savedSupplier,
       normalizedSupplierKey: savedSupplier?.normalizedSupplierKey || normalizeSupplierLookupKey(savedSupplier?.supplierName),
     };
+    updateSupplierReviewRequirement(latestSupplierResolution, savedSupplier?.supplierName);
     if (wasNewSupplier && latestSupplierResolution.normalizedSupplierKey) {
       sessionNewSupplierKeys.add(latestSupplierResolution.normalizedSupplierKey);
     }
@@ -1098,10 +1310,10 @@ saveSupplierButton.addEventListener("click", async () => {
     syncSupplierReviewUi(latestSupplierResolution);
     updatePreview();
     if (supplierReviewMissingFields) {
-      supplierReviewMissingFields.textContent = "Supplier profile saved. You can now confirm the payment.";
+      supplierReviewMissingFields.textContent = "Supplier saved. You can now confirm the payment.";
     }
     loadSupplierMasterSummary();
-    setStatus("Supplier profile saved to the master list. You can now continue with payment confirmation.", "ready");
+    setStatus("Supplier saved to this device. You can now continue with payment confirmation.", "ready");
   } catch (error) {
     setStatus(error.message || "Supplier save failed.", "warn");
   }
@@ -1130,9 +1342,9 @@ exportSupplierMasterButton.addEventListener("click", async () => {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
-    setSupplierMasterStatus(`Supplier master export completed: ${fileName}`, "ready");
+    setSupplierMasterStatus(`Supplier list export completed: ${fileName}`, "ready");
   } catch (error) {
-    setSupplierMasterStatus(error.message || "Supplier master export failed.", "warn");
+    setSupplierMasterStatus(error.message || "Supplier list export failed.", "warn");
   }
 });
 
@@ -1157,19 +1369,25 @@ supplierMasterFileInput.addEventListener("change", async () => {
 
     await loadSupplierMasterSummary();
     setSupplierMasterStatus(
-      `Supplier master import completed: ${file.name}. ${data.importedCount || 0} supplier profile${data.importedCount === 1 ? "" : "s"} imported.`,
+      `Supplier list import completed: ${file.name}. ${data.importedCount || 0} supplier profile${data.importedCount === 1 ? "" : "s"} imported.`,
       "ready"
     );
   } catch (error) {
-    setSupplierMasterStatus(error.message || "Supplier master import failed.", "warn");
+    setSupplierMasterStatus(error.message || "Supplier list import failed.", "warn");
   } finally {
     supplierMasterFileInput.value = "";
   }
 });
 
 confirmButton.addEventListener("click", async () => {
-  if (getSupplierResolutionUiState(latestSupplierResolution).requiresReview) {
-    setStatus("Save the supplier profile before confirming this payment.", "warn");
+  if (supplierReviewRequired) {
+    setSectionTwoGuidance(
+      "New supplier detected. Review and confirm the supplier details before adding it to the supplier master list."
+    );
+    if (supplierCheckNotice) {
+      supplierCheckNotice.classList.remove("hidden");
+    }
+    syncSupplierReviewUi(latestSupplierResolution);
     return;
   }
 
@@ -1223,21 +1441,22 @@ confirmButton.addEventListener("click", async () => {
   }
 
   setStatus(
-    `Payment confirmed and added to the ${mergedRecord.currency} queue.`,
+    `Payment confirmed and added to the ${mergedRecord.currency} export queue.`,
     "ready"
   );
 });
 
 resetButton.addEventListener("click", () => {
     clearCurrentForm();
-  setStatus("Current form cleared. Confirmed payments remain in the list.", "muted");
+  setStatus("Current payment cleared. Confirmed payments remain in the list.", "muted");
 });
 
 renderSelectedFiles([]);
 renderNewSupplierPayeeList();
+setOnboardingVisibility();
 loadConfig();
 loadSupplierMasterSummary();
-setSupplierMasterStatus("Supplier master actions will be shown here.", "muted");
+setSupplierMasterStatus("Supplier list actions will be shown here.", "muted");
 loadQueueFromServer()
   .then((records) => {
     confirmedRecords = records;
@@ -1272,7 +1491,10 @@ if (typeof module !== "undefined" && module.exports) {
     applySupplierDefaults,
     getSupplierResolutionUiState,
     getSupplierReviewMissingFields,
+    normalizeCurrencyInput,
     normalizeSupplierLookupKey,
+    shouldShowSupplierReview,
+    updateSupplierReviewRequirement,
     loadSupplierMasterSummary,
     extractDownloadFileName,
     getResponseErrorMessage,

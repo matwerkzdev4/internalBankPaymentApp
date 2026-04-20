@@ -10,12 +10,11 @@
     <main class="shell">
       <section class="top-row">
         <section class="hero top-card">
-          <p class="eyebrow">Internal Finance Tool</p>
+          <p class="eyebrow">Finance Operator Workspace</p>
           <h1>Bank Payment Extraction Tool</h1>
           <p class="lede">
-            This tool reads invoice and supporting documents, pulls out the payment details it can
-            find, lets you correct the rest, and holds confirmed payments in a list until you export
-            the full bank payment text file.
+            Use this screen to upload invoice documents, check the payment details, confirm each
+            payment into the list, and export the bank text file when the list is ready.
           </p>
         </section>
 
@@ -23,22 +22,36 @@
           <div class="supplier-master-copy">
             <p class="label">Supplier Master</p>
             <p id="supplierMasterSummary" class="supplier-master-summary">
-              No supplier profiles are saved on this device yet. Importing an existing supplier master JSON file will replace this local list.
+              No supplier profiles are saved on this device yet. Importing an existing supplier
+              master JSON file will replace this local list.
             </p>
           </div>
 
           <div class="supplier-master-actions">
             <label class="native-file-input supplier-master-upload">
-              <span class="supplier-master-upload-label">Import supplier master JSON file (replaces this device's local list)</span>
+              <span class="supplier-master-upload-label">Import supplier list JSON file (replaces this device's local list)</span>
               <input id="supplierMasterFileInput" type="file" accept=".json,application/json" />
             </label>
-            <button id="exportSupplierMasterButton" class="ghost" type="button">Export supplier master list</button>
+            <button id="exportSupplierMasterButton" class="ghost" type="button">Export supplier list</button>
           </div>
 
           <div id="supplierMasterStatus" class="status-banner muted supplier-master-status">
-            Supplier master actions will be shown here.
+            Supplier list actions will be shown here.
           </div>
         </section>
+      </section>
+
+      <section id="onboardingCard" class="operator-guide-card">
+        <div>
+          <p class="label">Quick Start For Finance Operators</p>
+          <h2>Use the tool in this order</h2>
+          <ol class="operator-guide-list">
+            <li>Upload the invoice and any supporting bank documents for one payment.</li>
+            <li>Check the highlighted fields and fix anything missing or unclear.</li>
+            <li>Confirm the payment into the list, then export only when the currency queue looks correct.</li>
+          </ol>
+        </div>
+        <button id="dismissOnboardingButton" class="ghost" type="button">Hide this guide</button>
       </section>
 
       <section class="panel">
@@ -46,8 +59,12 @@
           <span class="stage-number">1</span>
           <div>
             <h2>Upload Documents</h2>
-          <p>Choose up to 5 documents for the payment currently under review. Larger mixed batches may slow extraction.</p>
+            <p>What to do now: choose up to 5 files for one payment. Include the invoice and any bank detail support.</p>
           </div>
+        </div>
+
+        <div class="checklist-hint">
+          <strong>Checklist:</strong> Upload invoice and supporting documents for one payment only.
         </div>
 
         <form id="uploadForm" class="upload-form">
@@ -56,15 +73,22 @@
           </label>
           <div class="upload-actions">
             <button id="clearSelectedFilesButton" type="button" class="ghost">Clear selected files</button>
-            <button type="submit" class="primary">Extract details</button>
+            <button type="submit" class="primary">Read payment details</button>
           </div>
         </form>
 
-        <div id="statusBanner" class="status-banner muted">Waiting for documents</div>
+        <div id="extractionProgress" class="progress-card hidden" aria-live="polite">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <p class="progress-copy">Extraction in progress. Please wait while the app reads the documents.</p>
+        </div>
+
+        <div id="statusBanner" class="status-banner muted">Step 1: upload documents to begin.</div>
         <div class="selected-files-card">
-          <p id="selectedFilesSummary" class="label">No files selected</p>
+          <p id="selectedFilesSummary" class="label">No files selected yet</p>
           <ul id="selectedFilesList" class="selected-files-list">
-            <li class="selected-files-empty">Selected files will appear here.</li>
+            <li class="selected-files-empty">Your selected files will appear here before reading starts.</li>
           </ul>
         </div>
       </section>
@@ -73,13 +97,20 @@
         <div class="stage">
           <span class="stage-number">2</span>
           <div>
-            <h2>Review Extracted Details</h2>
-            <p>Missing required fields are highlighted. Fill them in before confirming this payment.</p>
+            <h2>Check Payment Details</h2>
+            <p class="stage-copy">
+              <span>What the app did: it filled what it could.</span>
+              <span>What to do now: check the highlighted fields and fix anything missing.</span>
+            </p>
           </div>
         </div>
 
+        <div class="checklist-hint">
+          <strong>Checklist:</strong> Check the payment details before confirmation.
+        </div>
+
         <div class="evidence-card">
-          <p class="label">Extraction Evidence</p>
+          <p class="label">What The App Found</p>
           <pre id="extractionEvidence">No extraction evidence yet</pre>
         </div>
 
@@ -101,7 +132,7 @@
               <span>Currency</span>
               <span id="currencyWarning" class="field-warning hidden">Verify currency code</span>
             </span>
-            <input name="currency" value="SGD" />
+            <input name="currency" value="SGD" autocapitalize="characters" />
           </label>
           <label>
             Due date
@@ -112,7 +143,7 @@
             <input name="paymentReference" />
           </label>
           <label class="required">
-            Beneficiary bank identifier / SWIFT
+            Beneficiary bank code / SWIFT
             <input name="bankSwiftCode" />
           </label>
           <label class="required">
@@ -129,13 +160,14 @@
           </label>
         </form>
 
+        <div id="sectionTwoGuidance" class="section-two-guidance"></div>
         <div id="missingFields" class="missing-fields"></div>
 
         <section id="supplierReviewPanel" class="supplier-review-card hidden">
           <div class="supplier-review-header">
             <div>
-              <p class="label">Supplier Review</p>
-              <h3 id="supplierReviewTitle">Review and save this supplier</h3>
+              <p class="label">Supplier Check</p>
+              <h3 id="supplierReviewTitle">Review and confirm this supplier</h3>
               <p id="supplierReviewMessage" class="supplier-review-message">
                 Confirm the supplier profile before you continue.
               </p>
@@ -152,7 +184,7 @@
               <input name="beneficiaryName" />
             </label>
             <label>
-              Beneficiary bank identifier / SWIFT
+              Beneficiary bank code / SWIFT
               <input name="bankSwiftCode" />
             </label>
             <label>
@@ -168,18 +200,22 @@
           <div id="supplierReviewMissingFields" class="missing-fields"></div>
 
           <div class="actions review-actions">
-            <button id="saveSupplierButton" class="primary" type="button">Save supplier profile</button>
+            <button id="saveSupplierButton" class="primary" type="button">Confirm supplier details and save to supplier list</button>
           </div>
         </section>
 
         <div class="preview-card">
-          <p class="label">Current transaction row preview</p>
+          <p class="label">Bank Row Preview</p>
           <pre id="rowPreview">No payment row yet</pre>
         </div>
 
+        <div id="supplierCheckNotice" class="supplier-check-notice hidden">
+          Complete the supplier check before confirming this payment.
+        </div>
+
         <div class="actions review-actions">
-          <button id="confirmButton" class="primary" type="button">Confirm and add to list</button>
-          <button id="resetButton" class="ghost" type="button">Clear current form</button>
+          <button id="confirmButton" class="primary" type="button">Confirm payment into list</button>
+          <button id="resetButton" class="ghost" type="button">Clear current payment</button>
         </div>
       </section>
 
@@ -188,8 +224,12 @@
           <span class="stage-number">3</span>
           <div>
             <h2>Confirmed Payment List</h2>
-            <p>Confirmed payments stay in this browser session and are grouped by currency for export.</p>
+            <p>What to do now: make sure each payment looks correct before exporting the currency queue.</p>
           </div>
+        </div>
+
+        <div class="checklist-hint">
+          <strong>Checklist:</strong> Confirmed payments are grouped by currency for export.
         </div>
 
         <div class="queue-card">
@@ -202,9 +242,13 @@
         <div class="stage">
           <span class="stage-number">4</span>
           <div>
-            <h2>New Supplier/Payee List</h2>
-            <p>New suppliers created in this session are grouped by currency to support payee setup in the bank application.</p>
+            <h2>New Supplier / Payee Setup List</h2>
+            <p>What to do now: if new suppliers were created, export this list so they can be set up in the bank application.</p>
           </div>
+        </div>
+
+        <div class="checklist-hint">
+          <strong>Checklist:</strong> Export this list only when you need to create new payees in the bank application.
         </div>
 
         <div class="queue-card">
