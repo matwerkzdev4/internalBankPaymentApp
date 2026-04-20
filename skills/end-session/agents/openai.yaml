@@ -1,4 +1,0 @@
-interface:
-  display_name: "End Session"
-  short_description: "Keep PROJECT_CONTEXT.md lean"
-  default_prompt: "Use $end-session to refresh PROJECT_CONTEXT.md with the latest durable context and remove stale details."

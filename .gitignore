@@ -1,4 +1,13 @@
 node_modules/
 uploads/
 *.log
+
 data/confirmed-queue.json
+data/suppliers.json
+
+# Codex local workflow
+AGENTS.md
+SESSION_LOG.md
+skills/
+
+SFExpress.pdf
