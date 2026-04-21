@@ -22,7 +22,10 @@
   - confirmed payment queue grouped by currency with one export action per currency queue
   - queue-level duplicate checks based on normalized supplier name, invoice number, and amount
   - dynamic header payment date on export in `DDMMYYYY`
-  - alphanumeric-only bank-details output for transaction rows
+  - currency-specific export header account selection, with `USD` using payer account `601425952201`
+  - transaction bank-details output restricted to letters and numbers
+  - transaction remark output restricted to letters and numbers
+  - transaction beneficiary-name output preserving extracted letter case and spaces, while removing other symbols
   - structured OpenAI output using JSON schema
   - supplier-name guardrails in both prompt and local parser
   - COD guardrails that keep bank details blank unless clearly shown
@@ -59,7 +62,8 @@
   - local `end-session` skill that updates `PROJECT_CONTEXT.md` and adds a new session log entry
   - better supplier-save error surfacing in the desktop app
   - portable `.exe` build for cases where the Windows installer path is blocked by endpoint security
-  - automated tests currently pass with 85 tests
+  - Git release snapshot created with commit `Release v1.0.0`, annotated tag `v1.0.0`, and shared tracking for `AGENTS.md`, `PROJECT_CONTEXT.md`, and `SESSION_LOG.md`
+  - automated tests currently pass with 90 tests
 
 ## Agreed Product Direction
 
@@ -92,7 +96,10 @@
 - For COD or cash-based invoices, do not guess SWIFT code or account number.
 - Leave bank details blank unless clearly supported by the uploaded documents.
 - The header payment date should reflect the current export date in `DDMMYYYY`.
+- `USD` export should use payer account `601425952201` in the first row, while `SGD` and `RMB` keep the standard payer account.
 - Transaction bank-details output should contain only letters and numbers.
+- Transaction remark output should contain only letters and numbers.
+- Transaction beneficiary-name output should preserve extracted casing, allow spaces, and remove other symbols.
 
 ## Known Gaps And Placeholders
 
@@ -106,6 +113,8 @@
 
 - Automated tests currently cover:
   - bank file generation, including multi-record export
+  - currency-specific export header account selection
+  - beneficiary-name and remark export sanitization rules
   - upload queue merge and duplicate-ignore helpers
   - confirmed-queue duplicate matching and currency grouping
   - confirmed-payment queue persistence
@@ -123,6 +132,6 @@
   - session-based new supplier/payee grouping and export text helpers
 - Windows desktop packaging startup and local app-data path helpers
 - OpenAI API setup helper logic for desktop configuration
-- Latest verified automated suite passed with 85 tests after the desktop packaging, supplier-save fixes, and in-app OpenAI setup updates.
+- Latest verified automated suite passed with 90 tests after the export-format updates, desktop packaging work, and shared Codex context tracking.
 - Project context should be kept in `PROJECT_CONTEXT.md`.
 - Session-by-session history should be kept in `SESSION_LOG.md`.

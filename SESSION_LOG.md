@@ -2,6 +2,12 @@
 
 ## 2026-04-21
 
+- Updated bank export formatting so `USD` uses payer account `601425952201`, while `SGD` and `RMB` keep the standard payer account.
+- Tightened export sanitization so bank details and remarks stay alphanumeric-only, while beneficiary names keep extracted casing and spaces but remove other symbols.
+- Rebuilt the Windows installer and portable outputs after the export changes and confirmed the refreshed files in `dist`.
+- Created the Git v1 release snapshot with commit `Release v1.0.0`, annotated tag `v1.0.0`, and shared tracking for `AGENTS.md`, `PROJECT_CONTEXT.md`, and `SESSION_LOG.md`.
+- Verified the full automated suite passed with 90 tests.
+
 - Packaged the project as a Windows desktop app with Electron, including installer and portable build outputs.
 - Moved persistent queue and supplier storage into writable per-device app-data paths and fixed the supplier-save blocker in the desktop app.
 - Added a one-screen OpenAI API setup card in the top row, with backend setup through the current Windows user's `OPENAI_API_KEY` and a restart-required flow.
