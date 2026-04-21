@@ -78,8 +78,75 @@ test("exportQueuedPayments exports one header and one row per confirmed payment"
 
   const lines = result.fileContent.split(/\r\n/);
   assert.equal(lines.length, 4);
-  assert.equal(lines[1].slice(240, 248), "INV-2002");
-  assert.equal(lines[2].slice(240, 248), "INV-2003");
+  assert.equal(lines[0].slice(13, 38).trimEnd(), "OCBCSGSGXXX601425952201");
+  assert.equal(lines[1].slice(240, 247), "INV2002");
+  assert.equal(lines[2].slice(240, 247), "INV2003");
+});
+
+test("exportQueuedPayments keeps the current payer account for SGD and RMB exports", () => {
+  const sgdResult = exportQueuedPayments(
+    [
+      {
+        corrected: {
+          invoiceNumber: "INV-1001",
+          amount: "10.00",
+          beneficiaryName: "Alpha Beta",
+          bankSwiftCode: "DBSSSGSGXXX",
+          beneficiaryAccountNumber: "123456789",
+          remark: "INV-1001",
+          currency: "SGD",
+        },
+      },
+    ],
+    { currency: "SGD" }
+  );
+  const rmbResult = exportQueuedPayments(
+    [
+      {
+        corrected: {
+          invoiceNumber: "INV-1002",
+          amount: "20.00",
+          beneficiaryName: "Gamma Delta",
+          bankSwiftCode: "DBSSSGSGXXX",
+          beneficiaryAccountNumber: "987654321",
+          remark: "INV-1002",
+          currency: "RMB",
+        },
+      },
+    ],
+    { currency: "RMB" }
+  );
+
+  assert.equal(
+    sgdResult.fileContent.split(/\r\n/)[0].slice(13, 38).trimEnd(),
+    "OCBCSGSGXXX601365950001"
+  );
+  assert.equal(
+    rmbResult.fileContent.split(/\r\n/)[0].slice(13, 38).trimEnd(),
+    "OCBCSGSGXXX601365950001"
+  );
+});
+
+test("exportQueuedPayments strips non-alphanumeric characters from exported remarks", () => {
+  const result = exportQueuedPayments(
+    [
+      {
+        corrected: {
+          invoiceNumber: "INV-4001/2026",
+          amount: "10.00",
+          beneficiaryName: "Alpha Beta",
+          bankSwiftCode: "DBSSSGSGXXX",
+          beneficiaryAccountNumber: "123456789",
+          remark: "INV-4001/2026 #APR (test)",
+          currency: "USD",
+        },
+      },
+    ],
+    { currency: "USD" }
+  );
+
+  const line = result.fileContent.split(/\r\n/)[1];
+  assert.equal(line.slice(240, 260).trimEnd(), "INV40012026APRtest");
 });
 
 test("confirmed payment export filename helpers format date, time, and count", () => {

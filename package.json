@@ -1,21 +1,55 @@
 {
   "name": "bank-payment-app-simple",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "desktop/main.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "electron .",
+    "start:web": "node server.js",
     "test": "node test/run-tests.js",
-    "demo:report": "node scripts/generate-demo-report.js"
+    "demo:report": "node scripts/generate-demo-report.js",
+    "build:win": "electron-builder --win nsis",
+    "build:win:portable": "electron-builder --win portable"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Internal bank payment extraction tool packaged for desktop delivery.",
   "dependencies": {
     "express": "^5.2.1",
     "mammoth": "^1.12.0",
     "multer": "^2.1.1",
     "openai": "^6.34.0",
     "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "electron": "^41.2.1",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.matwerkz.bankpaymenttool",
+    "productName": "Bank Payment Extraction Tool",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "config/**/*",
+      "desktop/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "server.js",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

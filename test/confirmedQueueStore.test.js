@@ -1,14 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const path = require("node:path");
 const {
   clearConfirmedQueue,
+  queueFilePath,
   readConfirmedQueue,
   writeConfirmedQueue,
 } = require("../lib/confirmedQueueStore");
-
-const queueFilePath = path.join(__dirname, "..", "data", "confirmed-queue.json");
 
 test("writeConfirmedQueue persists normalized queue records", () => {
   const records = writeConfirmedQueue([

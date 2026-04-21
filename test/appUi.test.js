@@ -17,7 +17,10 @@ const {
   mergeSelectedFiles,
   normalizeCurrencyInput,
   normalizeSupplierLookupKey,
+  saveOpenAiApiKey,
   setSupplierMasterStatus,
+  setApiSetupStatus,
+  syncApiSetupCard,
   shouldShowSupplierReview,
   updateSupplierReviewRequirement,
   triggerBrowserDownload,
@@ -299,6 +302,18 @@ test("setSupplierMasterStatus is exposed for supplier-only notifications", () =>
   assert.equal(typeof setSupplierMasterStatus, "function");
 });
 
+test("setApiSetupStatus is exposed for API setup notifications", () => {
+  assert.equal(typeof setApiSetupStatus, "function");
+});
+
+test("saveOpenAiApiKey is exposed for desktop API setup flow", () => {
+  assert.equal(typeof saveOpenAiApiKey, "function");
+});
+
+test("syncApiSetupCard is exposed for API setup card state updates", () => {
+  assert.equal(typeof syncApiSetupCard, "function");
+});
+
 test("extractDownloadFileName returns the filename from content disposition", () => {
   assert.equal(
     extractDownloadFileName('attachment; filename="supplier-master_17042026_1430_12-suppliers.json"', "fallback.json"),
@@ -358,10 +373,13 @@ test("index.html shows the web application intro before the supplier master card
   const indexHtml = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
   const heroIndex = indexHtml.indexOf('<section class="hero top-card">');
   const supplierMasterIndex = indexHtml.indexOf('<section class="supplier-master-card top-card">');
+  const apiSetupIndex = indexHtml.indexOf('<section id="apiSetupCard" class="api-setup-card top-card">');
 
   assert.notEqual(heroIndex, -1);
   assert.notEqual(supplierMasterIndex, -1);
+  assert.notEqual(apiSetupIndex, -1);
   assert.ok(heroIndex < supplierMasterIndex);
+  assert.ok(supplierMasterIndex < apiSetupIndex);
 });
 
 test("index.html no longer includes the old extracted-details persistence sentence", () => {
@@ -399,6 +417,8 @@ test("index.html includes the finance operator quick-start card and confirm summ
   assert.match(indexHtml, /What the app did: it filled what it could\./);
   assert.match(indexHtml, /What to do now: check the highlighted fields and fix anything missing\./);
   assert.match(indexHtml, /Extraction in progress/);
+  assert.match(indexHtml, /OpenAI API Setup/);
+  assert.match(indexHtml, /Save API key/);
   assert.equal(indexHtml.includes("Bank code used for international payment."), false);
   assert.equal(indexHtml.includes("Before You Confirm"), false);
 });

@@ -1,3 +1,4 @@
+require("./setupTestEnv");
 require("./bankFile.test");
 require("./appUi.test");
 require("./confirmedQueueStore.test");
@@ -7,3 +8,5 @@ require("./extraction.test");
 require("./exportQueue.test");
 require("./server.test");
 require("./realDocument.test");
+require("./appDataPaths.test");
+require("./openAiSetup.test");

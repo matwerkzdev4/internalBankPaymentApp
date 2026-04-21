@@ -7,6 +7,8 @@ const {
   createHeaderRow,
   createTransactionRow,
   formatExportDate,
+  sanitizeAlphanumeric,
+  sanitizeBeneficiaryName,
 } = require("../lib/bankFile");
 
 test("formatExportDate returns DDMMYYYY", () => {
@@ -19,19 +21,19 @@ test("transaction row maps required fields into fixed-width positions", () => {
     corrected: {
       bankSwiftCode: "OCBC-SGSG/XXX",
       beneficiaryAccountNumber: "6090-2947 5001",
-      beneficiaryName: "Leong Yew Wei",
+      beneficiaryName: "Leong Yew Wei / Co.",
       amount: "123.45",
       invoiceNumber: "INV-1001",
-      remark: "INV-1001",
+      remark: "INV-1001 / Apr",
     },
   });
 
   const row = createTransactionRow(paymentRecord);
   assert.equal(row.length, 1000);
   assert.equal(row.slice(0, 23), "OCBCSGSGXXX609029475001");
-  assert.equal(row.slice(45, 58), "Leong Yew Wei");
+  assert.equal(row.slice(45, 63).trimEnd(), "Leong Yew Wei  Co");
   assert.equal(row.slice(188, 205), "00000000000012345");
-  assert.equal(row.slice(240, 248), "INV-1001");
+  assert.equal(row.slice(240, 253).trimEnd(), "INV1001Apr");
 });
 
 test("bank file contains header row and one transaction row", () => {
@@ -59,6 +61,26 @@ test("header row uses dynamic export date in DDMMYYYY format", () => {
   });
 
   assert.equal(headerRow.slice(225, 233), "15042026");
+});
+
+test("header row keeps current payer account for SGD and RMB, and uses USD payer account for USD", () => {
+  const sgdHeader = createHeaderRow({ currency: "SGD" });
+  const rmbHeader = createHeaderRow({ currency: "RMB" });
+  const usdHeader = createHeaderRow({ currency: "USD" });
+
+  assert.equal(sgdHeader.slice(13, 38).trimEnd(), "OCBCSGSGXXX601365950001");
+  assert.equal(rmbHeader.slice(13, 38).trimEnd(), "OCBCSGSGXXX601365950001");
+  assert.equal(usdHeader.slice(13, 38).trimEnd(), "OCBCSGSGXXX601425952201");
+});
+
+test("sanitizeAlphanumeric removes spaces and symbols from exported text fields", () => {
+  assert.equal(sanitizeAlphanumeric("Leong Yew Wei / Co."), "LeongYewWeiCo");
+  assert.equal(sanitizeAlphanumeric("INV-1001 / Apr"), "INV1001Apr");
+});
+
+test("sanitizeBeneficiaryName keeps case and spaces, but removes other symbols", () => {
+  assert.equal(sanitizeBeneficiaryName("Leong Yew Wei / Co."), "Leong Yew Wei  Co");
+  assert.equal(sanitizeBeneficiaryName("ACME-TOOLS (S) PTE LTD"), "ACMETOOLS S PTE LTD");
 });
 
 test("bank file contains one header row and one transaction row per confirmed payment", () => {
@@ -95,6 +117,6 @@ test("bank file contains one header row and one transaction row per confirmed pa
   assert.equal(lines[0].slice(225, 233), "15042026");
   assert.equal(lines[1].slice(0, 20), "DBSSSGSGXXX153981779");
   assert.equal(lines[2].slice(0, 23), "OCBCSGSGXXX609029475001");
-  assert.equal(lines[1].slice(240, 248), "INV-2002");
-  assert.equal(lines[2].slice(240, 248), "INV-2003");
+  assert.equal(lines[1].slice(240, 248).trimEnd(), "INV2002");
+  assert.equal(lines[2].slice(240, 248).trimEnd(), "INV2003");
 });

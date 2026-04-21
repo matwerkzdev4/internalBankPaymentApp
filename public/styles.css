@@ -37,7 +37,7 @@ body {
 
 .top-row {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1.1fr 1.2fr 1fr;
   gap: 22px;
   align-items: stretch;
 }
@@ -89,7 +89,8 @@ h2 {
 .evidence-card,
 .preview-card,
 .supplier-review-card,
-.supplier-master-card {
+.supplier-master-card,
+.api-setup-card {
   margin-top: 22px;
   border: 1px solid var(--line);
   background: #fdf8ef;
@@ -433,6 +434,58 @@ button.ghost {
 }
 
 .supplier-master-status {
+  margin-top: auto;
+}
+
+.api-setup-card {
+  margin-top: 0;
+  display: flex;
+  gap: 14px;
+  flex-direction: column;
+}
+
+.api-setup-summary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.api-setup-form {
+  display: grid;
+  gap: 12px;
+}
+
+.api-setup-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.api-setup-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: white;
+  font: inherit;
+}
+
+.api-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.api-setup-ready {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #e8f5ee;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.api-setup-status {
   margin-top: auto;
 }
 

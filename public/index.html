@@ -39,6 +39,33 @@
             Supplier list actions will be shown here.
           </div>
         </section>
+
+        <section id="apiSetupCard" class="api-setup-card top-card">
+          <div class="api-setup-copy">
+            <p class="label">OpenAI API Setup</p>
+            <p id="apiSetupSummary" class="api-setup-summary">
+              Add an OpenAI API key on this device to enable AI backup extraction.
+            </p>
+          </div>
+
+          <form id="apiSetupForm" class="api-setup-form">
+            <label>
+              OpenAI API key
+              <input id="apiKeyInput" name="apiKey" type="password" autocomplete="off" />
+            </label>
+            <div class="api-setup-actions">
+              <button id="saveApiKeyButton" class="primary" type="submit">Save API key</button>
+            </div>
+          </form>
+
+          <div id="apiSetupReadyState" class="api-setup-ready hidden">
+            OpenAI API setup is complete on this device.
+          </div>
+
+          <div id="apiSetupStatus" class="status-banner muted api-setup-status">
+            API setup status will be shown here.
+          </div>
+        </section>
       </section>
 
       <section id="onboardingCard" class="operator-guide-card">

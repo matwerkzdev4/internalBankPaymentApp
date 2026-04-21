@@ -46,6 +46,18 @@ const extractionProgress =
   typeof document !== "undefined" ? document.getElementById("extractionProgress") : null;
 const supplierCheckNotice =
   typeof document !== "undefined" ? document.getElementById("supplierCheckNotice") : null;
+const apiSetupCard =
+  typeof document !== "undefined" ? document.getElementById("apiSetupCard") : null;
+const apiSetupForm =
+  typeof document !== "undefined" ? document.getElementById("apiSetupForm") : null;
+const apiKeyInput =
+  typeof document !== "undefined" ? document.getElementById("apiKeyInput") : null;
+const apiSetupSummary =
+  typeof document !== "undefined" ? document.getElementById("apiSetupSummary") : null;
+const apiSetupStatus =
+  typeof document !== "undefined" ? document.getElementById("apiSetupStatus") : null;
+const apiSetupReadyState =
+  typeof document !== "undefined" ? document.getElementById("apiSetupReadyState") : null;
 
 let currentRecord = { extracted: {}, corrected: {}, merged: {} };
 let confirmedRecords = [];
@@ -59,6 +71,13 @@ let latestSupplierResolution = {
   matched: false,
   supplier: null,
   normalizedSupplierKey: null,
+};
+let latestConfig = {
+  apiSetup: {
+    openAiAvailable: false,
+    setupRequired: true,
+    statusMessage: "No OpenAI key is configured on this device yet. Add it once to enable AI backup extraction.",
+  },
 };
 const MAX_UPLOAD_DOCUMENTS = 5;
 const supportedTextExtensions = new Set(["txt", "md"]);
@@ -483,6 +502,36 @@ function setSupplierMasterStatus(message, type = "muted") {
   supplierMasterStatus.className = `status-banner supplier-master-status ${type}`;
 }
 
+function setApiSetupStatus(message, type = "muted") {
+  if (!apiSetupStatus) {
+    return;
+  }
+
+  apiSetupStatus.textContent = message;
+  apiSetupStatus.className = `status-banner api-setup-status ${type}`;
+}
+
+function syncApiSetupCard(options = {}) {
+  if (!apiSetupCard || !apiSetupSummary || !apiSetupForm || !apiSetupReadyState) {
+    return;
+  }
+
+  const openAiAvailable = Boolean(options.openAiAvailable);
+  const summary =
+    options.summary ||
+    (openAiAvailable
+      ? "OpenAI API key is available on this device for AI backup extraction."
+      : "Add an OpenAI API key on this device to enable AI backup extraction.");
+
+  apiSetupSummary.textContent = summary;
+  apiSetupForm.classList.toggle("hidden", openAiAvailable);
+  apiSetupReadyState.classList.toggle("hidden", !openAiAvailable);
+
+  if (openAiAvailable && apiKeyInput) {
+    apiKeyInput.value = "";
+  }
+}
+
 function extractDownloadFileName(contentDisposition = "", fallback = "") {
   const matchedFileName = String(contentDisposition || "").match(/filename\*?=(?:UTF-8''|\"?)([^\";]+)/i)?.[1];
   return matchedFileName || fallback;
@@ -661,6 +710,17 @@ async function loadConfig() {
   const response = await fetch("/api/config");
   const data = await response.json();
   requiredFields = data.requiredExportFields;
+  latestConfig = data;
+  syncApiSetupCard({
+    openAiAvailable: data.apiSetup?.openAiAvailable,
+    summary: data.apiSetup?.statusMessage,
+  });
+  setApiSetupStatus(
+    data.apiSetup?.openAiAvailable
+      ? "OpenAI API setup is complete on this device."
+      : "OpenAI API key setup is still needed on this device.",
+    data.apiSetup?.openAiAvailable ? "ready" : "muted"
+  );
 }
 
 function updatePreview() {
@@ -728,10 +788,27 @@ async function saveSupplierProfile(profile = {}) {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Supplier save failed.");
+    throw new Error(data.details || data.error || "Supplier save failed.");
   }
 
   return data.supplier || null;
+}
+
+async function saveOpenAiApiKey(apiKey = "") {
+  const response = await fetch("/api/openai/setup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ apiKey }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || "OpenAI API key save failed.");
+  }
+
+  return data;
 }
 
 async function saveQueueToServer(records = []) {
@@ -1077,7 +1154,9 @@ if (
   supplierReviewForm &&
   saveSupplierButton &&
   exportSupplierMasterButton &&
-  supplierMasterFileInput
+  supplierMasterFileInput &&
+  apiSetupForm &&
+  apiKeyInput
 ) {
 fileInput.addEventListener("change", () => {
   const nextFiles = Array.from(fileInput.files || []);
@@ -1162,6 +1241,18 @@ uploadForm.addEventListener("submit", async (event) => {
     renderSelectedFiles(selectedFilesQueue);
     currentRecord = data.paymentRecord;
     latestExtractionMeta = data.extractionMeta || {};
+    syncApiSetupCard({
+      openAiAvailable: latestExtractionMeta.openAiAvailable,
+      summary: latestExtractionMeta.openAiAvailable
+        ? "OpenAI API key is available on this device for AI backup extraction."
+        : "AI backup extraction is not available yet. Add the OpenAI API key on this device, then restart the app once.",
+    });
+    if (!latestExtractionMeta.openAiAvailable) {
+      setApiSetupStatus(
+        "AI backup extraction is not available yet. Add the OpenAI API key, then restart the app once.",
+        "warn"
+      );
+    }
     let mergedValues = currentRecord.merged;
 
     try {
@@ -1379,6 +1470,30 @@ supplierMasterFileInput.addEventListener("change", async () => {
   }
 });
 
+apiSetupForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const apiKey = String(apiKeyInput?.value || "").trim();
+  if (!apiKey) {
+    setApiSetupStatus("Enter an OpenAI API key before saving.", "warn");
+    return;
+  }
+
+  try {
+    const result = await saveOpenAiApiKey(apiKey);
+    syncApiSetupCard({
+      openAiAvailable: false,
+      summary: "OpenAI API key saved. Restart the app once to enable AI backup extraction.",
+    });
+    setApiSetupStatus(result.message || "OpenAI API key saved. Restart the app once.", "ready");
+    if (apiKeyInput) {
+      apiKeyInput.value = "";
+    }
+  } catch (error) {
+    setApiSetupStatus(error.message || "OpenAI API key save failed.", "warn");
+  }
+});
+
 confirmButton.addEventListener("click", async () => {
   if (supplierReviewRequired) {
     setSectionTwoGuidance(
@@ -1457,6 +1572,7 @@ setOnboardingVisibility();
 loadConfig();
 loadSupplierMasterSummary();
 setSupplierMasterStatus("Supplier list actions will be shown here.", "muted");
+setApiSetupStatus("API setup status will be shown here.", "muted");
 loadQueueFromServer()
   .then((records) => {
     confirmedRecords = records;
@@ -1496,9 +1612,12 @@ if (typeof module !== "undefined" && module.exports) {
     shouldShowSupplierReview,
     updateSupplierReviewRequirement,
     loadSupplierMasterSummary,
+    saveOpenAiApiKey,
     extractDownloadFileName,
     getResponseErrorMessage,
     triggerBrowserDownload,
     setSupplierMasterStatus,
+    setApiSetupStatus,
+    syncApiSetupCard,
   };
 }
