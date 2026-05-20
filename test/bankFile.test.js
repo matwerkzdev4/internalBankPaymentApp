@@ -7,6 +7,7 @@ const {
   createHeaderRow,
   createTransactionRow,
   formatExportDate,
+  normalizeBankSwiftCode,
   sanitizeAlphanumeric,
   sanitizeBeneficiaryName,
 } = require("../lib/bankFile");
@@ -76,6 +77,12 @@ test("header row keeps current payer account for SGD and RMB, and uses USD payer
 test("sanitizeAlphanumeric removes spaces and symbols from exported text fields", () => {
   assert.equal(sanitizeAlphanumeric("Leong Yew Wei / Co."), "LeongYewWeiCo");
   assert.equal(sanitizeAlphanumeric("INV-1001 / Apr"), "INV1001Apr");
+});
+
+test("normalizeBankSwiftCode appends XXX to 8-character BICs only", () => {
+  assert.equal(normalizeBankSwiftCode("DBSSSGSG"), "DBSSSGSGXXX");
+  assert.equal(normalizeBankSwiftCode("DBSSSGSGXXX"), "DBSSSGSGXXX");
+  assert.equal(normalizeBankSwiftCode("OCBC-SGSG/XXX"), "OCBCSGSGXXX");
 });
 
 test("sanitizeBeneficiaryName keeps case and spaces, but removes other symbols", () => {

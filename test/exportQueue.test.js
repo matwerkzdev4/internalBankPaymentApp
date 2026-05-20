@@ -74,7 +74,7 @@ test("exportQueuedPayments exports one header and one row per confirmed payment"
 
   assert.equal(result.ok, true);
   assert.equal(result.status, 200);
-  assert.equal(result.fileName, "USD_17042026_1430_2.txt");
+  assert.equal(result.fileName, "Ocbc_260417002.txt");
 
   const lines = result.fileContent.split(/\r\n/);
   assert.equal(lines.length, 4);
@@ -149,9 +149,10 @@ test("exportQueuedPayments strips non-alphanumeric characters from exported rema
   assert.equal(line.slice(240, 260).trimEnd(), "INV40012026APRtest");
 });
 
-test("confirmed payment export filename helpers format date, time, and count", () => {
+test("confirmed payment export filename helper uses Ocbc_YYMMDDNNN format", () => {
   const now = new Date("2026-04-17T09:45:00");
   assert.equal(formatExportDatePart(now), "17042026");
   assert.equal(formatExportTimePart(now), "0945");
-  assert.equal(buildConfirmedPaymentExportFileName("rmb", 3, now), "RMB_17042026_0945_3.txt");
+  assert.equal(buildConfirmedPaymentExportFileName("rmb", 3, now), "Ocbc_260417003.txt");
+  assert.equal(buildConfirmedPaymentExportFileName("SGD", 2, new Date("2026-05-20T12:00:00")), "Ocbc_260520002.txt");
 });

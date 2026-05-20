@@ -39,7 +39,7 @@ test("confirmed payment export accepts raw merged queue records from the saved q
   );
 
   assert.equal(result.ok, true);
-  assert.equal(result.fileName, "USD_17042026_1430_2.txt");
+  assert.equal(result.fileName, "Ocbc_260417002.txt");
   assert.match(result.fileContent, /OCBCSGSGXXX601425952201/);
   assert.match(result.fileContent, /INV2002/);
   assert.match(result.fileContent, /INV2003/);
