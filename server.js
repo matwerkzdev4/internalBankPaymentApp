@@ -28,6 +28,7 @@ const {
   formatExportTimePart,
 } = require("./lib/exportQueue");
 const { getApiSetupState, saveOpenAiApiKey } = require("./lib/openAiSetup");
+const packageInfo = require("./package.json");
 
 function buildSupplierMasterExportFileName(records = [], date = new Date()) {
   const supplierCount = Math.max(0, Array.isArray(records) ? records.length : 0);
@@ -50,6 +51,7 @@ function createApp() {
     const apiSetup = getApiSetupState();
 
     res.json({
+      appVersion: packageInfo.version,
       headerPreview: bankConfig.header,
       requiredExportFields: [
         "bankSwiftCode",

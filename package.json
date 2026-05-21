@@ -1,6 +1,6 @@
 {
   "name": "bank-payment-app-simple",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "desktop/main.js",
   "scripts": {
     "start": "electron .",

@@ -19,6 +19,8 @@ const payeeSummary = typeof document !== "undefined" ? document.getElementById("
 const currencyWarning = typeof document !== "undefined" ? document.getElementById("currencyWarning") : null;
 const purposeCodeDescription =
   typeof document !== "undefined" ? document.getElementById("purposeCodeDescription") : null;
+const appVersionLabel =
+  typeof document !== "undefined" ? document.getElementById("appVersionLabel") : null;
 const fileInput = typeof document !== "undefined" ? document.getElementById("documents") : null;
 const supplierReviewPanel =
   typeof document !== "undefined" ? document.getElementById("supplierReviewPanel") : null;
@@ -75,6 +77,7 @@ let latestSupplierResolution = {
   normalizedSupplierKey: null,
 };
 let latestConfig = {
+  appVersion: "",
   apiSetup: {
     openAiAvailable: false,
     setupRequired: true,
@@ -324,6 +327,14 @@ function syncPurposeCodeDescription(value = "") {
 
   purposeCodeDescription.textContent =
     getPurposeCodeDescription(value) || "Enter a valid 4-character Singapore GIRO purpose code.";
+}
+
+function syncAppVersionLabel(version = "") {
+  if (!appVersionLabel) {
+    return;
+  }
+
+  appVersionLabel.textContent = version ? `Version ${version}` : "Version unavailable";
 }
 
 function buildValidationGuidance(missing = []) {
@@ -735,6 +746,7 @@ async function loadConfig() {
   const data = await response.json();
   requiredFields = data.requiredExportFields;
   latestConfig = data;
+  syncAppVersionLabel(data.appVersion);
   syncPurposeCodeDescription(reviewForm?.elements?.purposeCode?.value || "SUPP");
   syncApiSetupCard({
     openAiAvailable: data.apiSetup?.openAiAvailable,
@@ -1656,5 +1668,6 @@ if (typeof module !== "undefined" && module.exports) {
     setSupplierMasterStatus,
     setApiSetupStatus,
     syncApiSetupCard,
+    syncAppVersionLabel,
   };
 }

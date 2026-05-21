@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { exportQueuedPayments } = require("../lib/exportQueue");
 const { buildSupplierMasterExportFileName, startServer } = require("../server");
+const packageInfo = require("../package.json");
 
 test("buildSupplierMasterExportFileName includes readable label, date, time, and supplier count", () => {
   const fileName = buildSupplierMasterExportFileName(new Array(12).fill({}), new Date("2026-04-17T14:30:00"));
@@ -44,6 +45,21 @@ test("confirmed payment export accepts raw merged queue records from the saved q
   assert.equal(result.fileName, "Ocbc_260417002.txt");
   assert.match(result.fileContent, /OCBCSGSGXXX601425952201/);
   assert.match(result.fileContent, /SUPP/);
+});
+
+test("config endpoint exposes the package app version", async () => {
+  const { port, server } = await startServer({
+    port: 0,
+    host: "127.0.0.1",
+  });
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/config`);
+    const config = await response.json();
+    assert.equal(config.appVersion, packageInfo.version);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("startServer supports dynamic local ports for desktop packaging", async () => {

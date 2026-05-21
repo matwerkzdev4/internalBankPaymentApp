@@ -23,6 +23,7 @@ const {
   setSupplierMasterStatus,
   setApiSetupStatus,
   syncApiSetupCard,
+  syncAppVersionLabel,
   shouldShowSupplierReview,
   updateSupplierReviewRequirement,
   triggerBrowserDownload,
@@ -329,6 +330,10 @@ test("syncApiSetupCard is exposed for API setup card state updates", () => {
   assert.equal(typeof syncApiSetupCard, "function");
 });
 
+test("syncAppVersionLabel is exposed for frontend version display", () => {
+  assert.equal(typeof syncAppVersionLabel, "function");
+});
+
 test("extractDownloadFileName returns the filename from content disposition", () => {
   assert.equal(
     extractDownloadFileName('attachment; filename="supplier-master_17042026_1430_12-suppliers.json"', "fallback.json"),
@@ -434,6 +439,8 @@ test("index.html includes the finance operator quick-start card and confirm summ
   assert.match(indexHtml, /Extraction in progress/);
   assert.match(indexHtml, /OpenAI API Setup/);
   assert.match(indexHtml, /Save API key/);
+  assert.match(indexHtml, /appVersionLabel/);
+  assert.match(indexHtml, /Version loading/);
   assert.match(indexHtml, /Purpose Code/);
   assert.match(indexHtml, /purposeCodeDescription/);
   assert.equal(indexHtml.includes("Bank code used for international payment."), false);
