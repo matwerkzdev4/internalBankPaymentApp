@@ -551,6 +551,14 @@ button:disabled {
   font: inherit;
 }
 
+.purpose-code-description {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .review-grid label.required input.missing {
   border-color: var(--warn);
   background: #fff7f3;

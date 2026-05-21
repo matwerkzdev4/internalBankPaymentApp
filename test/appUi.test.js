@@ -14,8 +14,10 @@ const {
   getExtractionSourceLabel,
   getSupplierResolutionUiState,
   getSupplierReviewMissingFields,
+  getPurposeCodeDescription,
   mergeSelectedFiles,
   normalizeCurrencyInput,
+  normalizePurposeCodeInput,
   normalizeSupplierLookupKey,
   saveOpenAiApiKey,
   setSupplierMasterStatus,
@@ -276,6 +278,19 @@ test("normalizeCurrencyInput accepts lower-case currency values", () => {
   assert.equal(normalizeCurrencyInput("cny"), "RMB");
 });
 
+test("purpose code helpers normalize and describe configured codes", () => {
+  const config = {
+    purposeCodes: [
+      { purpose_code: "SUPP", description: "Supplier Payment" },
+      { purpose_code: "IVPT", description: "Invoice Payment" },
+    ],
+  };
+
+  assert.equal(normalizePurposeCodeInput(" iv-pt "), "IVPT");
+  assert.equal(getPurposeCodeDescription("supp", config), "Supplier Payment");
+  assert.equal(getPurposeCodeDescription("bad", config), "");
+});
+
 test("shouldShowSupplierReview opens review when a new supplier name exists", () => {
   updateSupplierReviewRequirement({ matchStatus: "not_found" }, "Bright Supplies Pte Ltd");
   assert.equal(shouldShowSupplierReview({ matchStatus: "not_found" }, { supplierName: "Bright Supplies Pte Ltd" }), true);
@@ -419,6 +434,8 @@ test("index.html includes the finance operator quick-start card and confirm summ
   assert.match(indexHtml, /Extraction in progress/);
   assert.match(indexHtml, /OpenAI API Setup/);
   assert.match(indexHtml, /Save API key/);
+  assert.match(indexHtml, /Purpose Code/);
+  assert.match(indexHtml, /purposeCodeDescription/);
   assert.equal(indexHtml.includes("Bank code used for international payment."), false);
   assert.equal(indexHtml.includes("Before You Confirm"), false);
 });

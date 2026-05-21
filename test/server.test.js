@@ -19,6 +19,7 @@ test("confirmed payment export accepts raw merged queue records from the saved q
         beneficiaryName: "Bright Supplies Pte Ltd",
         bankSwiftCode: "DBSSSGSGXXX",
         beneficiaryAccountNumber: "153981779",
+        purposeCode: "SUPP",
         remark: "INV-2002",
       },
       {
@@ -29,6 +30,7 @@ test("confirmed payment export accepts raw merged queue records from the saved q
         beneficiaryName: "Orbit Trading",
         bankSwiftCode: "OCBCSGSGXXX",
         beneficiaryAccountNumber: "609029475001",
+        purposeCode: "SUPP",
         remark: "INV-2003",
       },
     ],
@@ -41,8 +43,7 @@ test("confirmed payment export accepts raw merged queue records from the saved q
   assert.equal(result.ok, true);
   assert.equal(result.fileName, "Ocbc_260417002.txt");
   assert.match(result.fileContent, /OCBCSGSGXXX601425952201/);
-  assert.match(result.fileContent, /INV2002/);
-  assert.match(result.fileContent, /INV2003/);
+  assert.match(result.fileContent, /SUPP/);
 });
 
 test("startServer supports dynamic local ports for desktop packaging", async () => {

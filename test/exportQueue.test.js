@@ -79,8 +79,8 @@ test("exportQueuedPayments exports one header and one row per confirmed payment"
   const lines = result.fileContent.split(/\r\n/);
   assert.equal(lines.length, 4);
   assert.equal(lines[0].slice(13, 38).trimEnd(), "OCBCSGSGXXX601425952201");
-  assert.equal(lines[1].slice(240, 247), "INV2002");
-  assert.equal(lines[2].slice(240, 247), "INV2003");
+  assert.equal(lines[1].slice(240, 244), "SUPP");
+  assert.equal(lines[2].slice(240, 244), "SUPP");
 });
 
 test("exportQueuedPayments keeps the current payer account for SGD and RMB exports", () => {
@@ -127,7 +127,7 @@ test("exportQueuedPayments keeps the current payer account for SGD and RMB expor
   );
 });
 
-test("exportQueuedPayments strips non-alphanumeric characters from exported remarks", () => {
+test("exportQueuedPayments exports validated purpose codes in the fourth column", () => {
   const result = exportQueuedPayments(
     [
       {
@@ -137,6 +137,7 @@ test("exportQueuedPayments strips non-alphanumeric characters from exported rema
           beneficiaryName: "Alpha Beta",
           bankSwiftCode: "DBSSSGSGXXX",
           beneficiaryAccountNumber: "123456789",
+          purposeCode: "ivpt",
           remark: "INV-4001/2026 #APR (test)",
           currency: "USD",
         },
@@ -146,7 +147,7 @@ test("exportQueuedPayments strips non-alphanumeric characters from exported rema
   );
 
   const line = result.fileContent.split(/\r\n/)[1];
-  assert.equal(line.slice(240, 260).trimEnd(), "INV40012026APRtest");
+  assert.equal(line.slice(240, 244), "IVPT");
 });
 
 test("confirmed payment export filename helper uses Ocbc_YYMMDDNNN format", () => {

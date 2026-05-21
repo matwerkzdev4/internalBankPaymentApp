@@ -21,6 +21,7 @@ const {
 } = require("./lib/extraction");
 const { bankConfig } = require("./lib/bankFile");
 const { validatePaymentRecord } = require("./lib/paymentRecord");
+const { purposeCodes } = require("./lib/purposeCodes");
 const {
   exportQueuedPayments,
   formatExportDatePart,
@@ -56,7 +57,9 @@ function createApp() {
         "beneficiaryName",
         "amount",
         "invoiceNumber",
+        "purposeCode",
       ],
+      purposeCodes,
       extractionProvider: {
         openAiAvailable: apiSetup.openAiAvailable,
         statusMessage: apiSetup.openAiAvailable

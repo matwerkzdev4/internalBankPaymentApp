@@ -30,6 +30,18 @@ test("extractPaymentDetails pulls key invoice and bank fields from text", () => 
   assert.equal(details.amount, "345.67");
   assert.equal(details.bankSwiftCode, "OCBCSGSGXXX");
   assert.equal(details.beneficiaryAccountNumber, "622233344455");
+  assert.equal(details.purposeCode, "IVPT");
+});
+
+test("extractPaymentDetails identifies explicit valid purpose codes", () => {
+  const details = extractPaymentDetails(`
+    Supplier: Bright Supplies Pte Ltd
+    Invoice Number: INV-7789
+    Amount Due: SGD 120.00
+    Purpose Code: IVPT
+  `);
+
+  assert.equal(details.purposeCode, "IVPT");
 });
 
 test("validation blocks export when required fields are missing", () => {
@@ -177,6 +189,8 @@ test("buildOpenAiPrompt includes compact suffix block and core guardrails", () =
   assert.match(prompt, /look especially near the bottom half of the document/i);
   assert.match(prompt, /look for codes SGD, RMB, CNY, USD, and GBP/i);
   assert.match(prompt, /Normalize CNY to RMB/i);
+  assert.match(prompt, /Valid Singapore GIRO purpose codes:/);
+  assert.match(prompt, /SUPP: Supplier Payment/);
   assert.match(prompt, /Current parser result:/);
   assert.match(prompt, /Focus especially on these missing fields: invoiceNumber, amount, bankSwiftCode\./);
 

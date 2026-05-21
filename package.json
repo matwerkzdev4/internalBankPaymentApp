@@ -37,6 +37,7 @@
       "lib/**/*",
       "public/**/*",
       "server.js",
+      "sg_giro_purpose_codes.md",
       "package.json"
     ],
     "win": {

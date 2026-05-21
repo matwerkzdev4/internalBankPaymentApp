@@ -25,6 +25,7 @@ test("transaction row maps required fields into fixed-width positions", () => {
       beneficiaryName: "Leong Yew Wei / Co.",
       amount: "123.45",
       invoiceNumber: "INV-1001",
+      purposeCode: "SCVE",
       remark: "INV-1001 / Apr",
     },
   });
@@ -34,7 +35,7 @@ test("transaction row maps required fields into fixed-width positions", () => {
   assert.equal(row.slice(0, 23), "OCBCSGSGXXX609029475001");
   assert.equal(row.slice(45, 63).trimEnd(), "Leong Yew Wei  Co");
   assert.equal(row.slice(188, 205), "00000000000012345");
-  assert.equal(row.slice(240, 253).trimEnd(), "INV1001Apr");
+  assert.equal(row.slice(240, 244).trimEnd(), "SCVE");
 });
 
 test("bank file contains header row and one transaction row", () => {
@@ -124,6 +125,6 @@ test("bank file contains one header row and one transaction row per confirmed pa
   assert.equal(lines[0].slice(225, 233), "15042026");
   assert.equal(lines[1].slice(0, 20), "DBSSSGSGXXX153981779");
   assert.equal(lines[2].slice(0, 23), "OCBCSGSGXXX609029475001");
-  assert.equal(lines[1].slice(240, 248).trimEnd(), "INV2002");
-  assert.equal(lines[2].slice(240, 248).trimEnd(), "INV2003");
+  assert.equal(lines[1].slice(240, 244).trimEnd(), "SUPP");
+  assert.equal(lines[2].slice(240, 244).trimEnd(), "SUPP");
 });

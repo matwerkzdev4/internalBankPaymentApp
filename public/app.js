@@ -17,6 +17,8 @@ const queueSummary = typeof document !== "undefined" ? document.getElementById("
 const payeeList = typeof document !== "undefined" ? document.getElementById("payeeList") : null;
 const payeeSummary = typeof document !== "undefined" ? document.getElementById("payeeSummary") : null;
 const currencyWarning = typeof document !== "undefined" ? document.getElementById("currencyWarning") : null;
+const purposeCodeDescription =
+  typeof document !== "undefined" ? document.getElementById("purposeCodeDescription") : null;
 const fileInput = typeof document !== "undefined" ? document.getElementById("documents") : null;
 const supplierReviewPanel =
   typeof document !== "undefined" ? document.getElementById("supplierReviewPanel") : null;
@@ -78,6 +80,7 @@ let latestConfig = {
     setupRequired: true,
     statusMessage: "No OpenAI key is configured on this device yet. Add it once to enable AI backup extraction.",
   },
+  purposeCodes: [],
 };
 const MAX_UPLOAD_DOCUMENTS = 5;
 const supportedTextExtensions = new Set(["txt", "md"]);
@@ -106,7 +109,7 @@ const fieldNames = [
   "bankSwiftCode",
   "beneficiaryAccountNumber",
   "beneficiaryName",
-  "remark",
+  "purposeCode",
 ];
 const supplierFieldNames = [
   "supplierName",
@@ -126,7 +129,7 @@ const fieldLabels = {
   bankSwiftCode: "beneficiary bank code / SWIFT",
   beneficiaryAccountNumber: "beneficiary account number",
   beneficiaryName: "beneficiary name",
-  remark: "remark",
+  purposeCode: "purpose code",
 };
 
 function normalizeSupplierLookupKey(value = "") {
@@ -302,6 +305,25 @@ function getSupplierReviewMissingFields(values = {}) {
 function getFieldInstruction(fieldName) {
   const label = fieldLabels[fieldName] || fieldName;
   return `Enter ${label} before confirming this payment.`;
+}
+
+function normalizePurposeCodeInput(value = "") {
+  return String(value ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
+
+function getPurposeCodeDescription(value = "", config = latestConfig) {
+  const normalized = normalizePurposeCodeInput(value);
+  const matched = (config.purposeCodes || []).find((entry) => entry.purpose_code === normalized);
+  return matched?.description || "";
+}
+
+function syncPurposeCodeDescription(value = "") {
+  if (!purposeCodeDescription) {
+    return;
+  }
+
+  purposeCodeDescription.textContent =
+    getPurposeCodeDescription(value) || "Enter a valid 4-character Singapore GIRO purpose code.";
 }
 
 function buildValidationGuidance(missing = []) {
@@ -578,6 +600,7 @@ function setFormValues(values = {}) {
   for (const fieldName of fieldNames) {
     reviewForm.elements[fieldName].value = values[fieldName] ?? "";
   }
+  syncPurposeCodeDescription(reviewForm.elements.purposeCode?.value || "");
 }
 
 function setSupplierReviewValues(values = {}) {
@@ -595,6 +618,7 @@ function getCorrectedValues() {
   for (const fieldName of fieldNames) {
     corrected[fieldName] = reviewForm.elements[fieldName].value;
   }
+  corrected.purposeCode = normalizePurposeCodeInput(corrected.purposeCode);
   return corrected;
 }
 
@@ -711,6 +735,7 @@ async function loadConfig() {
   const data = await response.json();
   requiredFields = data.requiredExportFields;
   latestConfig = data;
+  syncPurposeCodeDescription(reviewForm?.elements?.purposeCode?.value || "SUPP");
   syncApiSetupCard({
     openAiAvailable: data.apiSetup?.openAiAvailable,
     summary: data.apiSetup?.statusMessage,
@@ -735,7 +760,7 @@ function updatePreview() {
     `Bank + account: ${bankAccount}\n` +
     `Beneficiary: ${merged.beneficiaryName || merged.supplierName || ""}\n` +
     `Amount: ${amount}\n` +
-    `Remark: ${merged.remark || merged.invoiceNumber || ""}`;
+    `Purpose Code: ${normalizePurposeCodeInput(merged.purposeCode || "SUPP")}`;
 }
 
 function getCurrentPayload() {
@@ -751,6 +776,7 @@ function getCurrentMergedRecord() {
     ...getCorrectedValues(),
     amount: String(reviewForm.elements.amount.value || "").trim(),
     currency: normalizeCurrencyInput(reviewForm.elements.currency.value || ""),
+    purposeCode: normalizePurposeCodeInput(reviewForm.elements.purposeCode.value || ""),
     bankSwiftCode: String(reviewForm.elements.bankSwiftCode.value || "").trim().toUpperCase(),
     beneficiaryAccountNumber: String(reviewForm.elements.beneficiaryAccountNumber.value || "")
       .replace(/\s+/g, "")
@@ -989,7 +1015,7 @@ function renderQueue() {
         `${record.beneficiaryName || record.supplierName || "(no beneficiary)"} | ` +
         `${record.amount || "(no amount)"} ${group.currency} | ` +
         `${record.bankSwiftCode || ""}${record.beneficiaryAccountNumber || ""} | ` +
-        `${record.remark || "(no remark)"}`;
+        `${record.purposeCode || "SUPP"}`;
 
       const removeButton = document.createElement("button");
       removeButton.type = "button";
@@ -1089,6 +1115,7 @@ function renderNewSupplierPayeeList() {
 function clearCurrentForm() {
   uploadForm.reset();
   reviewForm.reset();
+  syncPurposeCodeDescription("SUPP");
   currentRecord = { extracted: {}, corrected: {}, merged: {} };
   latestExtractionMeta = {};
   supplierReviewRequired = false;
@@ -1306,6 +1333,7 @@ uploadForm.addEventListener("submit", async (event) => {
 
 reviewForm.addEventListener("input", () => {
   const corrected = getCorrectedValues();
+  syncPurposeCodeDescription(corrected.purposeCode);
   updateSupplierReviewRequirement(latestSupplierResolution, corrected.supplierName);
   const missing = requiredFields.filter((fieldName) => !String(corrected[fieldName] || "").trim());
   applyValidation(missing);
@@ -1314,6 +1342,13 @@ reviewForm.addEventListener("input", () => {
     ...corrected,
   });
   syncSupplierReviewUi(latestSupplierResolution);
+  updatePreview();
+});
+
+reviewForm.elements.purposeCode.addEventListener("blur", () => {
+  const normalized = normalizePurposeCodeInput(reviewForm.elements.purposeCode.value || "");
+  reviewForm.elements.purposeCode.value = normalized;
+  syncPurposeCodeDescription(normalized);
   updatePreview();
 });
 
@@ -1607,7 +1642,9 @@ if (typeof module !== "undefined" && module.exports) {
     applySupplierDefaults,
     getSupplierResolutionUiState,
     getSupplierReviewMissingFields,
+    getPurposeCodeDescription,
     normalizeCurrencyInput,
+    normalizePurposeCodeInput,
     normalizeSupplierLookupKey,
     shouldShowSupplierReview,
     updateSupplierReviewRequirement,
